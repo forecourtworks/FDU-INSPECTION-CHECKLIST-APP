@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0d264d" />
+  <meta name="description" content="Forecourt Works Ltd – Petroleum Pumping Equipment Inspection & Compliance Checklist" />
+  <title>Forecourt Works Ltd | Petroleum Pumping Equipment Inspection Checklist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --navy: #0d264d;
+      --navy-light: #1a3a6b;
+      --accent: #d9730d;
+      --accent-hover: #b85f0a;
+      --success: #1a7346;
+      --danger: #b91c1c;
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --border: #d1d5db;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --radius: 10px;
+      --shadow: 0 4px 14px rgba(13, 38, 77, 0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding-bottom: 90px;
+    }
+    .app-header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+      color: white;
+      padding: 14px 16px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    }
+    .app-header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; }
+    .app-header .tagline { font-size: 0.68rem; opacity: 0.85; margin-top: 2px; }
+    .wo-meta { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .wo-badge {
+      background: rgba(255,255,255,0.15);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 500;
+    }
+    .wo-badge.status-completed { background: var(--success); }
+    .progress-bar {
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      margin-top: 12px;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.35s ease;
+    }
+    .container { max-width: 820px; margin: 0 auto; padding: 14px; }
+    .step-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      display: none;
+    }
+    .step-card.active { display: block; }
+    .step-header {
+      background: var(--navy);
+      color: white;
+      padding: 11px 14px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .step-header .step-num {
+      background: var(--accent);
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+    .step-body { padding: 14px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #143a6b;
+      margin-bottom: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .form-group label .req { color: var(--danger); }
+    input[type="text"], input[type="number"], input[type="date"], input[type="time"],
+    input[type="email"], input[type="tel"], select, textarea {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-family: inherit;
+      background: #fff;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(13, 38, 77, 0.12);
+    }
+    textarea { min-height: 70px; resize: vertical; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      background: #f9fafb;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 0.88rem;
+    }
+    .check-item input { width: 17px; height: 17px; accent-color: var(--navy); flex-shrink: 0; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 11px 18px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.92rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .btn-primary { background: var(--navy); color: white; }
+    .btn-primary:hover { background: var(--navy-light); }
+    .btn-accent { background: var(--accent); color: white; }
+    .btn-accent:hover { background: var(--accent-hover); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+    .btn-outline:hover { background: #f3f4f6; }
+    .btn-block { width: 100%; }
+    .btn-sm { padding: 7px 12px; font-size: 0.82rem; }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .nav-footer {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: white;
+      border-top: 1px solid var(--border);
+      padding: 10px 14px;
+      display: flex;
+      gap: 8px;
+      z-index: 90;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
+    }
+    .nav-footer .btn { flex: 1; }
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .photo-thumb {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #f3f4f6;
+    }
+    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-thumb .remove {
+      position: absolute;
+      top: 3px; right: 3px;
+      background: var(--danger);
+      color: white;
+      border: none;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .photo-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .sig-pad-wrap {
+      border: 2px solid #143a6b;
+      border-radius: 8px;
+      background: #ffffff;
+      position: relative;
+    }
+    .sig-pad-wrap canvas {
+      width: 100%;
+      height: 140px;
+      display: block;
+      touch-action: none;
+      background: #ffffff;
+    }
+    .sig-actions { display: flex; gap: 8px; margin-top: 6px; }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      margin: 8px 0;
+    }
+    .data-table th {
+      background: var(--navy);
+      color: white;
+      padding: 7px 5px;
+      text-align: left;
+      font-weight: 600;
+    }
+    .data-table td {
+      padding: 6px 5px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .data-table tr:nth-child(even) { background: #f9fafb; }
+    .data-table select, .data-table input {
+      padding: 5px 6px;
+      font-size: 0.78rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      width: 100%;
+    }
+    .toast {
+      position: fixed;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--navy);
+      color: white;
+      padding: 11px 18px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      max-width: 90%;
+      text-align: center;
+    }
+    .toast.show { opacity: 1; }
+    .toast.error { background: var(--danger); }
+    .toast.success { background: var(--success); }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(13,38,77,0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 300;
+      flex-direction: column;
+      gap: 10px;
+      color: white;
+    }
+    .overlay.show { display: flex; }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .help { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .section-note {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      margin-bottom: 12px;
+    }
+    .lift-type-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    @media (max-width: 480px) { .lift-type-grid { grid-template-columns: 1fr; } }
+    .lift-type-card {
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #fff;
+    }
+    .lift-type-card.selected {
+      border-color: var(--navy);
+      background: #eff6ff;
+    }
+    .lift-type-card input { margin-right: 6px; }
+    .service-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 0.85rem;
+      cursor: pointer;
+      margin: 0 6px 6px 0;
+    }
+    .service-chip.selected {
+      border-color: var(--navy);
+      background: #eff6ff;
+      font-weight: 600;
+    }
+    .service-chip input { accent-color: var(--navy); }
+    .nc-urgency-crit { background: #fef2f2; color: #991b1b; }
+    .nc-urgency-high { background: #fff7ed; color: #9a3412; }
+    .nc-urgency-med { background: #fefce8; color: #854d0e; }
+    .nc-urgency-low { background: #f0fdf4; color: #166534; }
+    .result-C { color: var(--success); font-weight: 700; }
+    .result-NC { color: var(--danger); font-weight: 700; }
+    .result-NA { color: var(--muted); }
+    .checklist-group { margin-bottom: 16px; }
+    .checklist-group h4 {
+      font-size: 0.88rem;
+      color: var(--navy);
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 2px solid var(--navy);
+    }
+    .check-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: start;
+      padding: 8px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .check-row .criteria { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+    .check-row select {
+      width: 90px;
+      padding: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .remarks-input {
+      margin-top: 4px;
+      font-size: 0.82rem;
+      padding: 6px 8px;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:4px;">
+      <div style="flex:1;min-width:0;">
+        <h1>FORECOURT WORKS LTD</h1>
+        <div class="tagline">Petroleum Pumping Equipment – Inspection & Compliance Checklist</div>
+        <div style="font-size:0.65rem;opacity:0.85;margin-top:3px;line-height:1.3;">
+          Ramco Court, Gate 3B, South C · +(254) 729-002-087 · dispatcher@forecourtworks.co.ke
+        </div>
+      </div>
+    </div>
+    <div class="wo-meta">
+      <span class="wo-badge" id="doc-number-display">CHK-XXXX-XXXX</span>
+      <span class="wo-badge" id="doc-date-display">—</span>
+      <span class="wo-badge" id="doc-status-display">DRAFT</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </header>
+
+  <div class="container">
+
+    <!-- STEP 0: BASICS + LIFT TYPE + SERVICE TYPE -->
+    <div class="step-card active" id="step-0" data-step="0">
+      <div class="step-header">
+        <span><span class="step-num">1</span> Job Basics, Equipment Type & Service Scope</span>
+      </div>
+      <div class="step-body">
+        <p style="font-size:0.88rem;color:var(--muted);margin-bottom:12px;">
+          This checklist records inspection observations, test results and conformance against acceptance criteria.
+          It is used alongside a Work Order. Troubleshooting &amp; repair actions belong on the Work Order.
+        </p>
+
+        <div class="form-group">
+          <label>Checklist Document Number <span class="req">*</span></label>
+          <input type="text" id="doc-number" placeholder="e.g. CHK-2026-0847" required />
+        </div>
+        <div class="row">
+          <div class="form-group">
+            <label>Document Date <span class="req">*</span></label>
+            <input type="date" id="doc-date" required />
+          </div>
+          <div class="form-group">
+            <label>Linked Work Order No. (if any)</label>
+            <input type="text" id="linked-wo" placeholder="WO-XXXX-XXXX" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Client / Asset Owner <span class="req">*</span></label>
+          <input type="text" id="client-name" placeholder="e.g. Ainushamsi Energy Limited" required />
+        </div>
+        <div class="row">
+          <div class="form-group">
+            <label>Site / Station <span class="req">*</span></label>
+            <input type="text" id="site-name" required />
+          </div>
+          <div class="form-group">
+            <label>Site Contact &amp; Phone</label>
+            <input type="text" id="site-contact" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Site Address</label>
+          <textarea id="site-address" rows="2"></textarea>
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>Lift ID / Asset Tag <span class="req">*</span></label>
+            <input type="text" id="lift-id" required />
+          </div>
+          <div class="form-group">
+            <label>Lift Capacity (kg)</label>
+            <input type="text" id="lift-capacity" placeholder="e.g. 4000" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="form-group">
+            <label>Manufacturer</label>
+            <input type="text" id="lift-mfr" />
+          </div>
+          <div class="form-group">
+            <label>Model / Serial No.</label>
+            <input type="text" id="lift-model" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="form-group">
+            <label>Year of Installation</label>
+            <input type="text" id="lift-year" />
+          </div>
+          <div class="form-group">
+            <label>Next PM Due Date</label>
+            <input type="date" id="next-pm" />
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:14px;">
+          <label>Equipment Type <span class="req">*</span></label>
+          <div class="lift-type-grid" id="lift-type-grid">
+            <label class="lift-type-card"><input type="radio" name="lift-type" value="Suction-FDU"> Suction FDU (inbuilt pump)</label>
+            <label class="lift-type-card"><input type="radio" name="lift-type" value="Remote-FDU"> Remote FDU (external STP)</label>
+            <label class="lift-type-card"><input type="radio" name="lift-type" value="STP"> Submersible Turbine Pump (STP)</label>
+            <label class="lift-type-card"><input type="radio" name="lift-type" value="Bulk-Pump"> Bulk Transfer Pump (Gear / Vane / Centrifugal / Diaphragm / Hand)</label>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label>FDU Product-to-Hose Configuration (if FDU)</label>
+          <select id="fdu-config">
+            <option value="">— Select or N/A —</option>
+            <option value="1P-1H">1P-1H (1 Product, 1 Hose)</option>
+            <option value="1P:2H">1P:2H (1 Product, 2 Hoses)</option>
+            <option value="2P:2H">2P:2H (2 Products, 2 Hoses)</option>
+            <option value="2P:4H">2P:4H (2 Products, 4 Hoses)</option>
+            <option value="3P:6H">3P:6H (3 Products, 6 Hoses)</option>
+            <option value="N/A">N/A – Bulk pump / non-FDU</option>
+          </select>
+        </div>
+
+
+        <div class="form-group" style="margin-top:14px;">
+          <label>Service Type(s) – select all that apply <span class="req">*</span></label>
+          <div id="service-type-grid">
+            <label class="service-chip"><input type="checkbox" name="service-type" value="A"> A. Pre-Installation Survey</label>
+            <label class="service-chip"><input type="checkbox" name="service-type" value="B"> B. Installation</label>
+            <label class="service-chip"><input type="checkbox" name="service-type" value="C"> C. Scheduled PM</label>
+            <label class="service-chip"><input type="checkbox" name="service-type" value="D"> D. Condition Inspection</label>
+            <label class="service-chip"><input type="checkbox" name="service-type" value="F"> F. User Training</label>
+            <label class="service-chip"><input type="checkbox" name="service-type" value="G"> G. Regulatory Compliance</label>
+          </div>
+          <div class="help">Troubleshooting &amp; Repair is handled on the Work Order, not this checklist.</div>
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>Date of Visit <span class="req">*</span></label>
+            <input type="date" id="visit-date" required />
+          </div>
+          <div class="form-group">
+            <label>Lead Technician <span class="req">*</span></label>
+            <input type="text" id="tech-lead" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Assisting Technician</label>
+          <input type="text" id="tech-assist" />
+        </div>
+
+        <button type="button" class="btn btn-accent btn-block" id="btn-start" style="margin-top:16px;">
+          Continue to Safety &amp; Checklist →
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 1: JHA -->
+    <div class="step-card" id="step-1" data-step="1">
+      <div class="step-header">
+        <span><span class="step-num">2</span> Job Safety &amp; Hazard Analysis (Mandatory)</span>
+      </div>
+      <div class="step-body">
+        <div class="section-note">Complete before any work. LOTO must be applied where energy sources exist.</div>
+        <div id="jha-container"></div>
+        <div class="form-group" style="margin-top:12px;">
+          <label>Technician JHA Sign-off Name <span class="req">*</span></label>
+          <input type="text" id="jha-sign-name" />
+        </div>
+        <button type="button" class="btn btn-primary btn-block" data-confirm="1" style="margin-top:12px;">Confirm JHA &amp; Continue</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: PRE-INSTALL (conditional) -->
+    <div class="step-card" id="step-2" data-step="2">
+      <div class="step-header">
+        <span><span class="step-num">3</span> Pre-Installation Site Readiness Survey</span>
+      </div>
+      <div class="step-body">
+        <div class="section-note">Mark C / NC / N/A. Record measured values. Critical NCs block installation.</div>
+        <div id="preinstall-container"></div>
+        <div class="form-group" style="margin-top:12px;">
+          <label>Survey Outcome <span class="req">*</span></label>
+          <select id="preinstall-outcome">
+            <option value="">— Select —</option>
+            <option value="READY">Site READY for installation</option>
+            <option value="NOT_READY">Site NOT READY – critical NCs listed</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Critical Non-Conformances / Client Actions Required</label>
+          <textarea id="preinstall-nc-notes" rows="3" placeholder="List critical items that must be resolved before installation"></textarea>
+        </div>
+        <button type="button" class="btn btn-primary btn-block" data-confirm="2">Confirm Pre-Install &amp; Continue</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: INSTALLATION (conditional) -->
+    <div class="step-card" id="step-3" data-step="3">
+      <div class="step-header">
+        <span><span class="step-num">4</span> Asset Installation Checklist</span>
+      </div>
+      <div class="step-body">
+        <div class="section-note">Verify against OEM manual. Do not energise or load until structural &amp; safety items are signed off.</div>
+        <div id="install-container"></div>
+        <button type="button" class="btn btn-primary btn-block" data-confirm="3" style="margin-top:12px;">Confirm Installation &amp; Continue</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: PM / CONDITION (conditional) -->
+    <div class="step-card" id="step-4" data-step="4">
+      <div class="step-header">
+        <span><span class="step-num">5</span> Preventive Maintenance &amp; Condition Checklist</span>
+      </div>
+      <div class="step-body">
+        <div class="section-note">
+          Perform applicable checks for the selected lift type. Use N/A for items that do not apply.
+          Any NC must be logged in the Corrective Action section.
+        </div>
+        <div id="pm-container"></div>
+        <button type="button" class="btn btn-primary btn-block" data-confirm="4" style="margin-top:12px;">Confirm PM / Condition &amp; Continue</button>
+      </div>
+    </div>
+
+    <!-- STEP 5: REGULATORY (conditional) -->
+    <div class="step-card" id="step-5" data-step="5">
+      <div class="step-header">
+        <span><span class="step-num">6</span> Regulatory Compliance Audit (DOSHS / OSH)</span>
+      </div>
+      <div class="step-body">
+        <div class="section-note">Mark Available or Missing. Missing items become Non-Conformances.</div>
+        <div id="reg-container"></div>
+        <button type="button" class="btn btn-primary btn-block" data-confirm="5" style="margin-top:12px;">Confirm Regulatory Audit &amp; Continue</button>
+      </div>
+    </div>
+
+    <!-- STEP 6: TRAINING (conditional) -->
+    <div class="step-card" id="step-6" data-step="6">
+      <div class="step-header">
+        <span><span class="step-num">7</span> Equipment User Training Record</span>
+      </div>
+      <div class="step-body">
+        <div class="section-note">Cover safe operation, daily checks, hazards and emergency procedures for this make/model.</div>
+        <div id="training-topics"></div>
+        <div class="form-group" style="margin-top:12px;">
+          <label>Trainees (Name – Designation)</label>
+          <textarea id="trainees" rows="4" placeholder="One per line: Name – Designation"></textarea>
+        </div>
+        <button type="button" class="btn btn-primary btn-block" data-confirm="6">Confirm Training &amp; Continue</button>
+      </div>
+    </div>
+
+    <!-- STEP 7: NON-CONFORMANCE LOG -->
+    <div class="step-card" id="step-7" data-step="7">
+      <div class="step-header">
+        <span><span class="step-num">8</span> Non-Conformance &amp; Corrective Action Log</span>
+      </div>
+      <div class="step-body">
+        <div class="section-note">
+          Auto-populated from NC / Missing items. Adjust urgency and target dates. Raise Work Orders for repairs.
+        </div>
+        <div id="nc-container"></div>
+        <button type="button" class="btn btn-outline btn-sm" id="btn-add-nc" style="margin:8px 0;">+ Add Manual Non-Conformance</button>
+        <button type="button" class="btn btn-primary btn-block" data-confirm="7" style="margin-top:8px;">Confirm NC Log &amp; Continue</button>
+      </div>
+    </div>
+
+    <!-- STEP 8: PHOTOS + NOTES -->
+    <div class="step-card" id="step-8" data-step="8">
+      <div class="step-header">
+        <span><span class="step-num">9</span> Photos, Evidence &amp; Technician Notes</span>
+      </div>
+      <div class="step-body">
+        <div class="form-group">
+          <label>Technician Closing Notes / Recommendations</label>
+          <textarea id="tech-notes" rows="4" placeholder="Summary of findings, priority actions, advice given to client in plain language"></textarea>
+        </div>
+        <h4 style="margin:12px 0 6px;font-size:0.9rem;">Photographic Evidence</h4>
+        <div class="help">Nameplate, overall condition, specific defects, test gauges, training attendance, etc.</div>
+        <div class="photo-actions">
+          <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+            📷 Camera / Gallery
+            <input type="file" id="photo-input" accept="image/*" capture="environment" multiple hidden />
+          </label>
+          <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+            📎 Attach File
+            <input type="file" id="file-input" accept="image/*,.pdf" multiple hidden />
+          </label>
+        </div>
+        <div class="photo-grid" id="photo-grid"></div>
+        <button type="button" class="btn btn-primary btn-block" data-confirm="8" style="margin-top:14px;">Confirm Notes &amp; Photos &amp; Continue</button>
+      </div>
+    </div>
+
+    <!-- STEP 9: SIGN-OFF -->
+    <div class="step-card" id="step-9" data-step="9">
+      <div class="step-header">
+        <span><span class="step-num">10</span> Sign-Off &amp; Client Briefing Confirmation</span>
+      </div>
+      <div class="step-body">
+        <div class="section-note">
+          Technician confirms inspection completed per FSW SOPs and findings explained in non-technical language.
+          Client confirms they have been briefed on equipment status and any remedial actions required.
+        </div>
+
+        <h4 style="font-size:0.92rem;margin-bottom:8px;">Technician Sign-Off <span class="req">*</span></h4>
+        <div class="form-group">
+          <label>Declaration (editable)</label>
+          <textarea id="tech-declaration" rows="3">I confirm that the inspection and checks recorded in this checklist have been performed in accordance with FORECOURT WORKS LTD Standard Operating Procedures. Findings have been explained to the client representative in clear, non-technical language, including the current status of the equipment and any recommended remedial actions.</textarea>
+        </div>
+        <div class="sig-pad-wrap"><canvas id="sig-tech"></canvas></div>
+        <div class="sig-actions">
+          <button type="button" class="btn btn-outline btn-sm" data-clear-sig="sig-tech">Clear</button>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="sig-tech-name" />
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="sig-tech-date" />
+          </div>
+        </div>
+
+        <hr style="margin:18px 0;border:none;border-top:1px solid var(--border);" />
+
+        <h4 style="font-size:0.92rem;margin-bottom:8px;">Client / Site Representative Confirmation <span class="req">*</span></h4>
+        <div class="form-group">
+          <label>Confirmation Statement (editable)</label>
+          <textarea id="client-declaration" rows="3">I confirm that the technician has satisfactorily briefed me on the current status of the equipment and on all remedial actions required (if any). I understand the findings and the priority of any corrective work needed.</textarea>
+        </div>
+        <div class="form-group">
+          <label>Representative Name <span class="req">*</span></label>
+          <input type="text" id="client-rep-name" required />
+        </div>
+        <div class="form-group">
+          <label>Position / Title</label>
+          <input type="text" id="client-rep-title" />
+        </div>
+        <div class="sig-pad-wrap"><canvas id="sig-client"></canvas></div>
+        <div class="sig-actions">
+          <button type="button" class="btn btn-outline btn-sm" data-clear-sig="sig-client">Clear</button>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="sig-client-date" />
+          </div>
+          <div class="form-group">
+            <label>Comments</label>
+            <input type="text" id="client-comments" />
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-block" data-confirm="9" style="margin-top:14px;">Confirm Sign-Off &amp; Continue to Review</button>
+      </div>
+    </div>
+
+    <!-- STEP 10: REVIEW & PDF -->
+    <div class="step-card" id="step-10" data-step="10">
+      <div class="step-header">
+        <span><span class="step-num">11</span> Review &amp; Generate PDF</span>
+      </div>
+      <div class="step-body">
+        <p style="font-size:0.88rem;margin-bottom:12px;">Review the checklist summary. Generate a professional PDF for sharing or archiving.</p>
+        <div id="review-summary"></div>
+        <div style="margin-top:18px;display:flex;flex-direction:column;gap:8px;">
+          <button type="button" class="btn btn-success btn-block" id="btn-generate-pdf">📄 Generate Professional PDF</button>
+          <button type="button" class="btn btn-accent btn-block" id="btn-share" style="display:none;">📤 Share / Download PDF</button>
+          <button type="button" class="btn btn-outline btn-block" id="btn-save-draft">💾 Save Draft Locally</button>
+        </div>
+        <div id="pdf-status" class="help" style="text-align:center;margin-top:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-footer" id="nav-footer">
+    <button type="button" class="btn btn-outline" id="btn-prev" disabled>← Back</button>
+    <button type="button" class="btn btn-primary" id="btn-next">Next →</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="overlay" id="overlay">
+    <div class="spinner"></div>
+    <div id="overlay-text">Generating PDF…</div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
