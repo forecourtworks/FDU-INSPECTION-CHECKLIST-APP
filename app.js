@@ -95,8 +95,6 @@
   const PM_HYDRAULIC = [
     { id: 'ph1', item: 'System pressure / flow performance', criteria: 'Delivery flow rate within OEM/expected range for product and nozzle type. No excessive pressure drop.' },
     { id: 'ph2', item: 'Leak-down / holding integrity', criteria: 'No visible product drop or seepage at joints, seals, meter or pump body under static pressure.' },
-    { id: 'ph3', item: 'Meter accuracy – verification stage', criteria: 'Error ≤ 0.25 % in excess only (new/repaired). Under-dispense not permitted. Record indicated vs reference volume.' },
-    { id: 'ph4', item: 'Meter accuracy – in-service stage', criteria: 'Error within +0.5 % / −0.25 % (Kenya Weights & Measures). Record indicated vs reference volume and calculated % error.' },
     { id: 'ph5', item: 'Hose dilation check', criteria: 'Dilation error of delivery hose ≤ 50 ml under normal conditions of use.' },
     { id: 'ph6', item: 'Seals & adjustable parts', criteria: 'All adjustable parts affecting quantity delivery sealed. Weights & Measures verification seal present and intact.' },
     { id: 'ph7', item: 'STP pressure (no-flow) & flow at nozzle', criteria: 'No-flow pressure within baseline. Flow at nozzle 5–10 GPM (or OEM) under normal conditions.' },
@@ -126,6 +124,189 @@
     'When to stop use and call for service',
     'Specific hazards of this equipment (vapour, pressurised lines, electrical in hazardous area)'
   ];
+
+
+  // ── Meter Accuracy / Calibration State ─────────────────────────────────
+  const calState = {
+    newFdu: [],      // array of reading objects
+    inService: []
+  };
+
+  function calcMeterError(dispenserIndicatedL, proverActualL, capacityL, stage) {
+    // Option B: proverActualL = true volume in the can
+    // Error positive (+) = dispenser gave MORE fuel than it indicated → customer gains
+    const errorL = proverActualL - dispenserIndicatedL;
+    const errorMl = errorL * 1000;
+    const errorPct = dispenserIndicatedL > 0 ? (errorL / dispenserIndicatedL) * 100 : 0;
+    const perLitreMl = dispenserIndicatedL > 0 ? (errorMl / dispenserIndicatedL) : 0;
+
+    let pass = false;
+    let limitText = '';
+    if (stage === 'new') {
+      // 0.25% excess only (under-dispense not allowed)
+      limitText = '0.25% excess only (under-dispense not permitted)';
+      pass = errorPct >= 0 && errorPct <= 0.25;
+    } else {
+      // +0.5% / -0.25%
+      limitText = '+0.5% excess or −0.25% deficiency';
+      pass = errorPct >= -0.25 && errorPct <= 0.5;
+    }
+
+    let narrative = '';
+    if (errorMl > 0.5) {
+      narrative = `Customer is GAINING / Station is LOSING (${errorMl.toFixed(1)} ml extra delivered)`;
+    } else if (errorMl < -0.5) {
+      narrative = `Customer is LOSING / Station is GAINING (${Math.abs(errorMl).toFixed(1)} ml short delivered)`;
+    } else {
+      narrative = 'Negligible difference (within measurement uncertainty)';
+    }
+
+    return {
+      errorMl: Math.round(errorMl * 10) / 10,
+      errorPct: Math.round(errorPct * 1000) / 1000,
+      perLitreMl: Math.round(perLitreMl * 100) / 100,
+      pass,
+      limitText,
+      narrative,
+      status: pass ? 'PASS' : 'FAIL'
+    };
+  }
+
+  function renderCalSection(containerId, stage, title, colour) {
+    const cont = document.getElementById(containerId);
+    if (!cont) return;
+    const readings = stage === 'new' ? calState.newFdu : calState.inService;
+    const bg = colour === 'new' ? '#ecfdf5' : '#fff7ed';
+    const border = colour === 'new' ? '#059669' : '#d97706';
+    const headBg = colour === 'new' ? '#059669' : '#d97706';
+
+    let html = `<div class="cal-block" style="border:2px solid ${border};border-radius:10px;margin-bottom:16px;overflow:hidden;">
+      <div style="background:${headBg};color:#fff;padding:10px 14px;font-weight:700;font-size:0.95rem;">${title}</div>
+      <div style="background:${bg};padding:12px;">
+        <p style="font-size:0.8rem;margin-bottom:10px;color:#374151;">
+          ${stage === 'new'
+            ? 'Legal limit (Weights & Measures): <b>0.25 % excess only</b>. Under-dispensing is not permitted on new / never-used / newly repaired FDUs.'
+            : 'Legal limit (Weights & Measures): <b>+0.5 % excess or −0.25 % deficiency</b> for in-service equipment.'}
+        </p>
+        <div id="${containerId}-rows"></div>
+        <button type="button" class="btn btn-outline btn-sm" data-add-cal="${stage}" style="margin-top:8px;">+ Add Reading</button>
+        <div id="${containerId}-summary" style="margin-top:12px;font-size:0.85rem;"></div>
+      </div>
+    </div>`;
+    cont.innerHTML = html;
+    renderCalRows(containerId, stage);
+    cont.querySelector(`[data-add-cal="${stage}"]`).addEventListener('click', () => {
+      const arr = stage === 'new' ? calState.newFdu : calState.inService;
+      arr.push({ capacity: 20, indicated: '', actual: '', flow: '' });
+      renderCalRows(containerId, stage);
+    });
+  }
+
+  function renderCalRows(containerId, stage) {
+    const rowsCont = document.getElementById(containerId + '-rows');
+    const summaryCont = document.getElementById(containerId + '-summary');
+    if (!rowsCont) return;
+    const arr = stage === 'new' ? calState.newFdu : calState.inService;
+    if (arr.length === 0) {
+      arr.push({ capacity: 20, indicated: '', actual: '', flow: '' });
+    }
+    let html = '';
+    arr.forEach((r, idx) => {
+      const calc = (r.indicated !== '' && r.actual !== '')
+        ? calcMeterError(parseFloat(r.indicated), parseFloat(r.actual), r.capacity, stage)
+        : null;
+      html += `<div class="cal-row" data-idx="${idx}" style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <strong style="font-size:0.85rem;">Reading #${idx + 1}</strong>
+          ${arr.length > 1 ? `<button type="button" class="btn btn-outline btn-sm" data-remove-cal="${stage}" data-idx="${idx}" style="padding:2px 8px;font-size:0.75rem;">Remove</button>` : ''}
+        </div>
+        <div class="row" style="margin-bottom:6px;">
+          <div class="form-group" style="margin-bottom:4px;">
+            <label style="font-size:0.7rem;">Prover Can Capacity</label>
+            <select class="cal-capacity" data-stage="${stage}" data-idx="${idx}">
+              <option value="5" ${r.capacity == 5 ? 'selected' : ''}>5 L</option>
+              <option value="10" ${r.capacity == 10 ? 'selected' : ''}>10 L</option>
+              <option value="20" ${r.capacity == 20 ? 'selected' : ''}>20 L</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:4px;">
+            <label style="font-size:0.7rem;">Approx. Flow Rate (L/min)</label>
+            <input type="text" class="cal-flow" data-stage="${stage}" data-idx="${idx}" value="${r.flow || ''}" placeholder="e.g. 35" />
+          </div>
+        </div>
+        <div class="row" style="margin-bottom:6px;">
+          <div class="form-group" style="margin-bottom:4px;">
+            <label style="font-size:0.7rem;">Dispenser Indicated Volume (L)</label>
+            <input type="number" step="0.001" class="cal-indicated" data-stage="${stage}" data-idx="${idx}" value="${r.indicated}" placeholder="What the display showed" />
+          </div>
+          <div class="form-group" style="margin-bottom:4px;">
+            <label style="font-size:0.7rem;">Prover Can Actual Reading (L)</label>
+            <input type="number" step="0.001" class="cal-actual" data-stage="${stage}" data-idx="${idx}" value="${r.actual}" placeholder="True volume in the can" />
+          </div>
+        </div>`;
+      if (calc) {
+        const statusColour = calc.pass ? '#059669' : '#dc2626';
+        html += `<div style="background:#f8fafc;border-left:4px solid ${statusColour};padding:8px 10px;border-radius:4px;font-size:0.8rem;">
+          <div><b>Over/Under:</b> ${calc.errorMl > 0 ? '+' : ''}${calc.errorMl} ml &nbsp;|&nbsp; <b>%</b> ${calc.errorPct > 0 ? '+' : ''}${calc.errorPct}% &nbsp;|&nbsp; <b>Per Litre:</b> ${calc.perLitreMl > 0 ? '+' : ''}${calc.perLitreMl} ml/L</div>
+          <div style="margin-top:3px;"><b>Status:</b> <span style="color:${statusColour};font-weight:700;">${calc.status}</span> against ${calc.limitText}</div>
+          <div style="margin-top:3px;color:#4b5563;">${calc.narrative}</div>
+        </div>`;
+      }
+      html += `</div>`;
+    });
+    rowsCont.innerHTML = html;
+
+    // Bind events
+    rowsCont.querySelectorAll('.cal-capacity, .cal-indicated, .cal-actual, .cal-flow').forEach(el => {
+      el.addEventListener('input', () => updateCalReading(el));
+      el.addEventListener('change', () => updateCalReading(el));
+    });
+    rowsCont.querySelectorAll('[data-remove-cal]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const st = btn.dataset.removeCal;
+        const i = parseInt(btn.dataset.idx, 10);
+        const arr = st === 'new' ? calState.newFdu : calState.inService;
+        arr.splice(i, 1);
+        renderCalRows(containerId, stage);
+      });
+    });
+
+    // Summary
+    if (summaryCont) {
+      const valid = arr.filter(r => r.indicated !== '' && r.actual !== '').map(r =>
+        calcMeterError(parseFloat(r.indicated), parseFloat(r.actual), r.capacity, stage)
+      );
+      if (valid.length >= 2) {
+        const pcts = valid.map(v => v.errorPct);
+        const max = Math.max(...pcts);
+        const min = Math.min(...pcts);
+        const spread = max - min;
+        const allPass = valid.every(v => v.pass);
+        summaryCont.innerHTML = `<div style="background:#f1f5f9;padding:8px 10px;border-radius:6px;">
+          <b>Repeatability summary (${valid.length} readings):</b><br>
+          Error range: ${min.toFixed(3)}% to ${max.toFixed(3)}% (spread ${spread.toFixed(3)}%)<br>
+          Overall: <span style="font-weight:700;color:${allPass ? '#059669' : '#dc2626'}">${allPass ? 'ALL WITHIN LIMITS' : 'ONE OR MORE OUTSIDE LIMITS'}</span>
+        </div>`;
+      } else {
+        summaryCont.innerHTML = valid.length === 1
+          ? '<span style="color:#6b7280;">Add more readings to assess repeatability / drift.</span>'
+          : '';
+      }
+    }
+  }
+
+  function updateCalReading(el) {
+    const stage = el.dataset.stage;
+    const idx = parseInt(el.dataset.idx, 10);
+    const arr = stage === 'new' ? calState.newFdu : calState.inService;
+    if (!arr[idx]) return;
+    if (el.classList.contains('cal-capacity')) arr[idx].capacity = parseInt(el.value, 10);
+    if (el.classList.contains('cal-indicated')) arr[idx].indicated = el.value;
+    if (el.classList.contains('cal-actual')) arr[idx].actual = el.value;
+    if (el.classList.contains('cal-flow')) arr[idx].flow = el.value;
+    const containerId = stage === 'new' ? 'cal-new-container' : 'cal-inservice-container';
+    renderCalRows(containerId, stage);
+  }
 
   // ── Helpers ────────────────────────────────────────────────────────────
   function todayISO() {
@@ -285,12 +466,19 @@
       <div id="pm-mech"></div>
       <div id="pm-elec"></div>
       <div id="pm-hyd"></div>
+      <div id="cal-new-container" style="margin-top:16px;"></div>
+      <div id="cal-inservice-container"></div>
     `;
     cont.appendChild(wrap);
-    renderCheckList('#pm-struct', PM_STRUCTURAL, 'A. Structural Integrity (All lift types)');
+    renderCheckList('#pm-struct', PM_STRUCTURAL, 'A. Structural & Cabinet Integrity');
     renderCheckList('#pm-mech', PM_MECHANICAL, 'B. Mechanical System Health');
     renderCheckList('#pm-elec', PM_ELECTRICAL, 'C. Electrical System Health');
-    renderCheckList('#pm-hyd', PM_HYDRAULIC, 'D. Hydraulic / Pneumatic System Health');
+    renderCheckList('#pm-hyd', PM_HYDRAULIC, 'D. Hydraulic / Flow Performance (excl. Meter Accuracy)');
+    // Dedicated Meter Accuracy modules with live calculation
+    renderCalSection('cal-new-container', 'new',
+      '1. METER ACCURACY – New & Never Used Before FDU  (Verification / Commissioning)', 'new');
+    renderCalSection('cal-inservice-container', 'inService',
+      '2. METER ACCURACY – In-Service FDU  (Routine Inspection)', 'inService');
   }
 
   // ── Non-conformance auto-collect ───────────────────────────────────────
@@ -638,7 +826,37 @@
         dumpResults('5A. STRUCTURAL', PM_STRUCTURAL);
         dumpResults('5B. MECHANICAL', PM_MECHANICAL);
         dumpResults('5C. ELECTRICAL', PM_ELECTRICAL);
-        dumpResults('5D. HYDRAULIC / PNEUMATIC', PM_HYDRAULIC);
+        dumpResults('5D. HYDRAULIC / FLOW PERFORMANCE', PM_HYDRAULIC);
+
+      // Meter Accuracy – New FDU
+      sectionHead('5E. METER ACCURACY – New & Never Used Before FDU');
+      bodyText('Legal limit: 0.25% excess only (under-dispense not permitted).');
+      if (calState.newFdu.length === 0 || calState.newFdu.every(r => !r.indicated || !r.actual)) {
+        bodyText('No readings recorded.');
+      } else {
+        calState.newFdu.forEach((r, i) => {
+          if (!r.indicated || !r.actual) return;
+          const c = calcMeterError(parseFloat(r.indicated), parseFloat(r.actual), r.capacity, 'new');
+          bodyText(`Reading #${i+1}: Indicated ${r.indicated} L  |  Prover ${r.actual} L  |  Flow ${r.flow || '—'} L/min`);
+          bodyText(`  Error: ${c.errorMl > 0 ? '+' : ''}${c.errorMl} ml  (${c.errorPct > 0 ? '+' : ''}${c.errorPct}%)  |  ${c.perLitreMl > 0 ? '+' : ''}${c.perLitreMl} ml/L  |  ${c.status}`);
+          bodyText(`  ${c.narrative}`);
+        });
+      }
+
+      // Meter Accuracy – In-Service
+      sectionHead('5F. METER ACCURACY – In-Service FDU');
+      bodyText('Legal limit: +0.5% excess or −0.25% deficiency.');
+      if (calState.inService.length === 0 || calState.inService.every(r => !r.indicated || !r.actual)) {
+        bodyText('No readings recorded.');
+      } else {
+        calState.inService.forEach((r, i) => {
+          if (!r.indicated || !r.actual) return;
+          const c = calcMeterError(parseFloat(r.indicated), parseFloat(r.actual), r.capacity, 'inService');
+          bodyText(`Reading #${i+1}: Indicated ${r.indicated} L  |  Prover ${r.actual} L  |  Flow ${r.flow || '—'} L/min`);
+          bodyText(`  Error: ${c.errorMl > 0 ? '+' : ''}${c.errorMl} ml  (${c.errorPct > 0 ? '+' : ''}${c.errorPct}%)  |  ${c.perLitreMl > 0 ? '+' : ''}${c.perLitreMl} ml/L  |  ${c.status}`);
+          bodyText(`  ${c.narrative}`);
+        });
+      }
       }
       if (state.serviceTypes.includes('G')) dumpResults('6. REGULATORY COMPLIANCE', REG_ITEMS);
 

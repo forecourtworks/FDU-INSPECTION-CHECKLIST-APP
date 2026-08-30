@@ -70,6 +70,32 @@ Additional critical criteria:
 
 ---
 
+## Meter Accuracy / Calibration (Live Calculation)
+
+Two clearly differentiated modules:
+
+| Module | Legal Limit (Kenya Weights & Measures) |
+|--------|----------------------------------------|
+| **1. New & Never Used Before FDU** | **0.25 % excess only** (under-dispense prohibited) |
+| **2. In-Service FDU** | **+0.5 % excess or −0.25 % deficiency** |
+
+For each reading the technician:
+- Selects Prover Can Capacity (5 L / 10 L / 20 L)
+- Enters **Dispenser Indicated Volume** (what the display showed)
+- Enters **Prover Can Actual Reading** (true volume measured in the can)
+- Optionally records approximate flow rate (L/min)
+
+The app automatically calculates and displays:
+- Over / Under in **ml**
+- Over / Under as a **%**
+- Over / Under **per litre sold**
+- PASS / FAIL against the applicable legal limit
+- Plain-language statement: *Customer is GAINING / Station is LOSING* or vice-versa
+
+**Repeatability:** “+ Add Reading” allows multiple deliveries. A summary shows error range and whether all readings remain within limits (detects drift).
+
+---
+
 ## Features
 
 - **Equipment Type & Configuration selectors** – only relevant sections appear.
