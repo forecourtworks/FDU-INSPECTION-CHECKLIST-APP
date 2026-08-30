@@ -135,6 +135,7 @@
   function calcMeterError(dispenserIndicatedL, proverActualL, capacityL, stage) {
     // Option B: proverActualL = true volume in the can
     // Error positive (+) = dispenser gave MORE fuel than it indicated → customer gains
+    // All values forced to 2 decimal places for consistent presentation
     const errorL = proverActualL - dispenserIndicatedL;
     const errorMl = errorL * 1000;
     const errorPct = dispenserIndicatedL > 0 ? (errorL / dispenserIndicatedL) * 100 : 0;
@@ -152,19 +153,23 @@
       pass = errorPct >= -0.25 && errorPct <= 0.5;
     }
 
+    const errorMl2 = Number(errorMl.toFixed(2));
+    const errorPct2 = Number(errorPct.toFixed(2));
+    const perLitreMl2 = Number(perLitreMl.toFixed(2));
+
     let narrative = '';
-    if (errorMl > 0.5) {
-      narrative = `Customer is GAINING / Station is LOSING (${errorMl.toFixed(1)} ml extra delivered)`;
-    } else if (errorMl < -0.5) {
-      narrative = `Customer is LOSING / Station is GAINING (${Math.abs(errorMl).toFixed(1)} ml short delivered)`;
+    if (errorMl2 > 0.50) {
+      narrative = `Customer is GAINING / Station is LOSING (${errorMl2.toFixed(2)} ml extra delivered)`;
+    } else if (errorMl2 < -0.50) {
+      narrative = `Customer is LOSING / Station is GAINING (${Math.abs(errorMl2).toFixed(2)} ml short delivered)`;
     } else {
       narrative = 'Negligible difference (within measurement uncertainty)';
     }
 
     return {
-      errorMl: Math.round(errorMl * 10) / 10,
-      errorPct: Math.round(errorPct * 1000) / 1000,
-      perLitreMl: Math.round(perLitreMl * 100) / 100,
+      errorMl: errorMl2,
+      errorPct: errorPct2,
+      perLitreMl: perLitreMl2,
       pass,
       limitText,
       narrative,
@@ -224,9 +229,9 @@
           <div class="form-group" style="margin-bottom:4px;">
             <label style="font-size:0.7rem;">Prover Can Capacity</label>
             <select class="cal-capacity" data-stage="${stage}" data-idx="${idx}">
-              <option value="5" ${r.capacity == 5 ? 'selected' : ''}>5 L</option>
-              <option value="10" ${r.capacity == 10 ? 'selected' : ''}>10 L</option>
-              <option value="20" ${r.capacity == 20 ? 'selected' : ''}>20 L</option>
+              <option value="5" ${r.capacity == 5 ? 'selected' : ''}>5.00 L</option>
+              <option value="10" ${r.capacity == 10 ? 'selected' : ''}>10.00 L</option>
+              <option value="20" ${r.capacity == 20 ? 'selected' : ''}>20.00 L</option>
             </select>
           </div>
           <div class="form-group" style="margin-bottom:4px;">
@@ -237,19 +242,32 @@
         <div class="row" style="margin-bottom:6px;">
           <div class="form-group" style="margin-bottom:4px;">
             <label style="font-size:0.7rem;">Dispenser Indicated Volume (L)</label>
-            <input type="number" step="0.001" class="cal-indicated" data-stage="${stage}" data-idx="${idx}" value="${r.indicated}" placeholder="What the display showed" />
+            <input type="number" step="0.01" class="cal-indicated" data-stage="${stage}" data-idx="${idx}" value="${r.indicated}" placeholder="What the display showed" />
           </div>
           <div class="form-group" style="margin-bottom:4px;">
             <label style="font-size:0.7rem;">Prover Can Actual Reading (L)</label>
-            <input type="number" step="0.001" class="cal-actual" data-stage="${stage}" data-idx="${idx}" value="${r.actual}" placeholder="True volume in the can" />
+            <input type="number" step="0.01" class="cal-actual" data-stage="${stage}" data-idx="${idx}" value="${r.actual}" placeholder="True volume in the can" />
           </div>
         </div>`;
       if (calc) {
         const statusColour = calc.pass ? '#059669' : '#dc2626';
+        const signMl = calc.errorMl > 0 ? '+' : '';
+        const signPct = calc.errorPct > 0 ? '+' : '';
+        const signPer = calc.perLitreMl > 0 ? '+' : '';
         html += `<div style="background:#f8fafc;border-left:4px solid ${statusColour};padding:8px 10px;border-radius:4px;font-size:0.8rem;">
-          <div><b>Over/Under:</b> ${calc.errorMl > 0 ? '+' : ''}${calc.errorMl} ml &nbsp;|&nbsp; <b>%</b> ${calc.errorPct > 0 ? '+' : ''}${calc.errorPct}% &nbsp;|&nbsp; <b>Per Litre:</b> ${calc.perLitreMl > 0 ? '+' : ''}${calc.perLitreMl} ml/L</div>
-          <div style="margin-top:3px;"><b>Status:</b> <span style="color:${statusColour};font-weight:700;">${calc.status}</span> against ${calc.limitText}</div>
-          <div style="margin-top:3px;color:#4b5563;">${calc.narrative}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">
+            <div><b>Prover Capacity:</b> ${Number(r.capacity).toFixed(2)} L</div>
+            <div><b>Flow Rate:</b> ${r.flow ? Number(r.flow).toFixed(2) + ' L/min' : '—'}</div>
+            <div><b>Dispenser Indicated:</b> ${Number(r.indicated).toFixed(2)} L</div>
+            <div><b>Prover Actual:</b> ${Number(r.actual).toFixed(2)} L</div>
+          </div>
+          <div style="margin-top:6px;padding-top:6px;border-top:1px solid #e2e8f0;">
+            <b>Over/Under:</b> ${signMl}${calc.errorMl.toFixed(2)} ml &nbsp;|&nbsp;
+            <b>%</b> ${signPct}${calc.errorPct.toFixed(2)}% &nbsp;|&nbsp;
+            <b>Per Litre:</b> ${signPer}${calc.perLitreMl.toFixed(2)} ml/L
+          </div>
+          <div style="margin-top:4px;"><b>Status:</b> <span style="color:${statusColour};font-weight:700;">${calc.status}</span> against ${calc.limitText}</div>
+          <div style="margin-top:4px;color:#4b5563;font-weight:500;">${calc.narrative}</div>
         </div>`;
       }
       html += `</div>`;
@@ -284,7 +302,7 @@
         const allPass = valid.every(v => v.pass);
         summaryCont.innerHTML = `<div style="background:#f1f5f9;padding:8px 10px;border-radius:6px;">
           <b>Repeatability summary (${valid.length} readings):</b><br>
-          Error range: ${min.toFixed(3)}% to ${max.toFixed(3)}% (spread ${spread.toFixed(3)}%)<br>
+          Error range: ${min.toFixed(2)}% to ${max.toFixed(2)}% (spread ${spread.toFixed(2)}%)<br>
           Overall: <span style="font-weight:700;color:${allPass ? '#059669' : '#dc2626'}">${allPass ? 'ALL WITHIN LIMITS' : 'ONE OR MORE OUTSIDE LIMITS'}</span>
         </div>`;
       } else {
@@ -837,8 +855,13 @@
         calState.newFdu.forEach((r, i) => {
           if (!r.indicated || !r.actual) return;
           const c = calcMeterError(parseFloat(r.indicated), parseFloat(r.actual), r.capacity, 'new');
-          bodyText(`Reading #${i+1}: Indicated ${r.indicated} L  |  Prover ${r.actual} L  |  Flow ${r.flow || '—'} L/min`);
-          bodyText(`  Error: ${c.errorMl > 0 ? '+' : ''}${c.errorMl} ml  (${c.errorPct > 0 ? '+' : ''}${c.errorPct}%)  |  ${c.perLitreMl > 0 ? '+' : ''}${c.perLitreMl} ml/L  |  ${c.status}`);
+          const sMl = c.errorMl > 0 ? '+' : '';
+          const sPct = c.errorPct > 0 ? '+' : '';
+          const sPer = c.perLitreMl > 0 ? '+' : '';
+          bodyText(`Reading #${i+1}`);
+          bodyText(`  Prover Capacity: ${Number(r.capacity).toFixed(2)} L  |  Flow Rate: ${r.flow ? Number(r.flow).toFixed(2) + ' L/min' : '—'}`);
+          bodyText(`  Dispenser Indicated: ${Number(r.indicated).toFixed(2)} L  |  Prover Actual: ${Number(r.actual).toFixed(2)} L`);
+          bodyText(`  Over/Under: ${sMl}${c.errorMl.toFixed(2)} ml  |  ${sPct}${c.errorPct.toFixed(2)}%  |  ${sPer}${c.perLitreMl.toFixed(2)} ml/L  |  ${c.status}`);
           bodyText(`  ${c.narrative}`);
         });
       }
@@ -852,8 +875,13 @@
         calState.inService.forEach((r, i) => {
           if (!r.indicated || !r.actual) return;
           const c = calcMeterError(parseFloat(r.indicated), parseFloat(r.actual), r.capacity, 'inService');
-          bodyText(`Reading #${i+1}: Indicated ${r.indicated} L  |  Prover ${r.actual} L  |  Flow ${r.flow || '—'} L/min`);
-          bodyText(`  Error: ${c.errorMl > 0 ? '+' : ''}${c.errorMl} ml  (${c.errorPct > 0 ? '+' : ''}${c.errorPct}%)  |  ${c.perLitreMl > 0 ? '+' : ''}${c.perLitreMl} ml/L  |  ${c.status}`);
+          const sMl = c.errorMl > 0 ? '+' : '';
+          const sPct = c.errorPct > 0 ? '+' : '';
+          const sPer = c.perLitreMl > 0 ? '+' : '';
+          bodyText(`Reading #${i+1}`);
+          bodyText(`  Prover Capacity: ${Number(r.capacity).toFixed(2)} L  |  Flow Rate: ${r.flow ? Number(r.flow).toFixed(2) + ' L/min' : '—'}`);
+          bodyText(`  Dispenser Indicated: ${Number(r.indicated).toFixed(2)} L  |  Prover Actual: ${Number(r.actual).toFixed(2)} L`);
+          bodyText(`  Over/Under: ${sMl}${c.errorMl.toFixed(2)} ml  |  ${sPct}${c.errorPct.toFixed(2)}%  |  ${sPer}${c.perLitreMl.toFixed(2)} ml/L  |  ${c.status}`);
           bodyText(`  ${c.narrative}`);
         });
       }
