@@ -23,13 +23,13 @@
 
   // ── Checklist data (N/A-aware) ──────────────────────────────────────────
   const JHA_ITEMS = [
-    { id: 'jha1', step: '1. Preparation', hazard: 'Unexpected start-up / Energy release', control: 'LOTO applied. All power disconnected & tagged. Verify zero energy. Isolate product lines if required.' },
-    { id: 'jha2', step: '2. Flammable Atmosphere', hazard: 'Fire / explosion from fuel vapour', control: 'No smoking/hot work. Gas monitor in use. Bonding/earthing confirmed. Fire extinguisher ready.' },
-    { id: 'jha3', step: '3. Component Handling', hazard: 'Musculoskeletal / Crush injury', control: 'Lifting aids for heavy components (STP, meters). Team lift. Clear path of travel.' },
-    { id: 'jha4', step: '4. Pressurised Systems', hazard: 'High-pressure fluid injection / Hose burst', control: 'Depressurise lines before disconnection. Wear goggles, face shield & chemical-resistant gloves.' },
-    { id: 'jha5', step: '5. Electrical Work', hazard: 'Electrocution / Arc flash in hazardous area', control: 'Verify zero voltage. Use intrinsically safe tools where required. Check Ex ratings.' },
-    { id: 'jha6', step: '6. Confined Space / Sump Entry', hazard: 'Asphyxiation / vapour exposure in STP or dispenser sump', control: 'Gas test before entry. Forced ventilation. Standby person. Harness if required.' },
-    { id: 'jha7', step: '7. Product Spill / Environmental', hazard: 'Fuel spill to ground or drain', control: 'Spill kit ready. Containment in place. Immediate isolation valves known. Report any release.' }
+    { id: 'jha1', item: 'Preparation', criteria: 'Unexpected start-up / Energy release', criteria: 'LOTO applied. All power disconnected & tagged. Verify zero energy. Isolate product lines if required.' },
+    { id: 'jha2', item: 'Flammable Atmosphere', criteria: 'Fire / explosion from fuel vapour', criteria: 'No smoking/hot work. Gas monitor in use. Bonding/earthing confirmed. Fire extinguisher ready.' },
+    { id: 'jha3', item: 'Component Handling', criteria: 'Musculoskeletal / Crush injury', criteria: 'Lifting aids for heavy components (STP, meters). Team lift. Clear path of travel.' },
+    { id: 'jha4', item: 'Pressurised Systems', criteria: 'High-pressure fluid injection / Hose burst', criteria: 'Depressurise lines before disconnection. Wear goggles, face shield & chemical-resistant gloves.' },
+    { id: 'jha5', item: 'Electrical Work', criteria: 'Electrocution / Arc flash in hazardous area', criteria: 'Verify zero voltage. Use intrinsically safe tools where required. Check Ex ratings.' },
+    { id: 'jha6', item: 'Confined Space / Sump Entry', criteria: 'Asphyxiation / vapour exposure in STP or dispenser sump', ccriteria: 'Gas test before entry. Forced ventilation. Standby person. Harness if required.' },
+    { id: 'jha7', item: 'Product Spill / Environmental', criteria: 'Fuel spill to ground or drain', criteria: 'Spill kit ready. Containment in place. Immediate isolation valves known. Report any release.' }
   ];
 
   const PREINSTALL_ITEMS = [
