@@ -338,9 +338,8 @@
   }
 
   function generateDocNumber() {
-    const y = new Date().getFullYear();
-    const n = String(Math.floor(Math.random() * 9000) + 1000);
-    return `CHK-${y}-${n}`;
+    const y = new Date().getFullYear()
+    return `PUMPS & DISPENSERS INSPECTION CHECKLIST- ${y} -001`;
   }
 
   function toast(msg, type = '') {
