@@ -1,5 +1,5 @@
 /**
- * FORECOURT WORKS LTD – Petroleum Pumping Equipment Inspection & Compliance Checklist App
+ * FORECOURT WORKS LTD – Pumps & Dispensers Inspection Checklist App
  * Complementary to the Technical Service Work Order. Focus: inspection, C/NC, prioritised actions.
  * Troubleshooting & Repair is deliberately excluded (handled on Work Order).
  */
@@ -339,7 +339,7 @@
 
   function generateDocNumber() {
     const y = new Date().getFullYear()
-    return `PUMPS & DISPENSERS INSPECTION CHECKLIST- ${y} -001`;
+    return `CHECKLIST ID- ${y} -001`;
   }
 
   function toast(msg, type = '') {
@@ -807,18 +807,18 @@
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(6.5);
         doc.setTextColor(...navy);
-        doc.text('FSW | Petroleum Pumping Equipment Inspection & Compliance Checklist', margin, fy);
+        doc.text('FSW | Pumps & Dispensers Inspection Checklist', margin, fy);
         doc.text('Page ' + pageNum + ' of ' + totalPages, pageW - margin, fy, { align: 'right' });
         // Middle confidential centred above inner boundary
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(5.5);
         doc.setTextColor(...grey);
-        doc.text('CONFIDENTIAL – Client Use Only', pageW / 2, fy, { align: 'center' });
+        doc.text('CONFIDENTIAL – FSW Use Only', pageW / 2, fy, { align: 'center' });
         // Brand line below the outer boundary
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(5);
         doc.setTextColor(...navy);
-        doc.text('FORECOURT WORKS LIMITED – Engineering Reliability into Every Forecourt', pageW / 2, pageH - outer + 3.5, { align: 'center' });
+        doc.text('Engineering Reliability into Every Forecourt', pageW / 2, pageH - outer + 3.5, { align: 'center' });
       }
 
       function checkPage(need) {
@@ -951,14 +951,14 @@
 
       // Company header
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
+      doc.setFontSize(14);
       doc.setTextColor(...navy);
       doc.text('FORECOURT WORKS LIMITED', pageW / 2, y, { align: 'center' });
       y += 5;
-      doc.setFont('helvetica', 'italic');
+      doc.setFont('helvetica', 'Normal');
       doc.setFontSize(8.5);
       doc.setTextColor(...dark);
-      doc.text('Engineering Reliability into Every Forecourt', pageW / 2, y, { align: 'center' });
+      doc.text('Email:sales@forecourtworks.co.ke |  Tel: +(254) 729002087', pageW / 2, y, { align: 'center' });
       y += 4;
       doc.setDrawColor(...navy);
       doc.setLineWidth(0.4);
@@ -967,7 +967,7 @@
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(...navy);
-      doc.text('EQUIPMENT/SYSTEMS INSPECTION CHECKLIST', pageW / 2, y, { align: 'center' });
+      doc.text('  PUMPS & DISPENSERS INSPECTION CHECKLIST', pageW / 2, y, { align: 'center' });
       y += 6;
 
       // Checklist No + WO No box
@@ -978,41 +978,45 @@
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(7.5);
       doc.setTextColor(...dark);
-      doc.text('Inspection Checklist No.  ' + ($('#doc-number').value || '—'), margin + 3, y + 5.2);
+      doc.text('Checklist ID.  ' + ($('#doc-number').value || '—'), margin + 3, y + 5.2);
       doc.text('Associated Work Order No.  ' + ($('#linked-wo').value || '—'), margin + usable / 2, y + 5.2);
       y += 11;
 
       // 1. GENERAL INFORMATION
       sectionBar('1. GENERAL INFORMATION');
       kvLine([
-        { k: 'Client', v: $('#client-name').value },
-        { k: 'Site', v: $('#site-name').value }
+        { k: 'Inspection Date', v: $('#inspection-date').value },
+        { k: 'Inspection Number', v: $('#inspection-number').value }
+      ]);
+      kvLine([    
+        { k: 'Client Name', v: $('#client-name').value },
+        { k: 'Site Location', v: $('#site-name').value }
       ]);
       kvLine([
-        { k: 'Asset ID', v: $('#lift-id').value },
-        { k: 'Type', v: state.equipType }
+        { k: 'Pump/Dispenser Type', v: state.equipType },
+        { k: 'Equipment Brand', v: $('#equipment-brand').value }
+      ]);
+      kvLine([ 
+        { k: 'Unique Asset ID', v: $('#lift-id').value },
+        { k: 'Model No. / Serial No. ', v: $('#equipment-model').value }
       ]);
       kvLine([
-        { k: 'Manufacturer', v: $('#lift-mfr').value },
-        { k: 'Model / Serial', v: $('#lift-model').value }
+        // { k: 'Last Inpection/PM Date', v: $('#Last-pm').value },
+        { k: 'Next Inspection/PM Date', v: $('#next-pm').value }
       ]);
       kvLine([
-        { k: 'Visit Date', v: $('#visit-date').value },
-        { k: 'Next PM', v: $('#next-pm').value }
-      ]);
-      kvLine([
-        { k: 'Technician', v: $('#tech-lead').value },
+        { k: 'Technician-In-Charge', v: $('#tech-lead').value },
         { k: 'Service Type(s)', v: state.serviceTypes.join(', ') }
       ]);
       kvLine([
-        { k: 'FDU Config', v: $('#fdu-config').value || '—' },
-        { k: 'Component ID(s)', v: $('#component-ids').value || '—' }
+        { k: 'Product:Hose Configuration', v: $('#fdu-config').value || '—' },
+        { k: 'Product Dispensed', v: $('#component-ids').value }
       ]);
       y += 2;
 
       // 2. JHA
       sectionBar('2. JOB SAFETY & HAZARD ANALYSIS');
-      bodyLine('JHA Sign-off: ' + ($('#jha-sign-name').value || '—'), 8, false);
+      bodyLine('JHA Sign-off- This is your acceptance to apply and follow ALL the safety controls for this job : ' + ($('#jha-sign-name').value || '—'), 8, false);
       // JHA uses different selects; dump as table-like
       const jhaItems = JHA_ITEMS.map(it => ({
         id: it.id,
@@ -1282,7 +1286,7 @@
         drawFooter(i, pageCount);
       }
 
-      const fileName = ($('#doc-number').value || 'Checklist') + '_' + ($('#site-name').value || 'Site').replace(/\s+/g, '_') + '.pdf';
+      const fileName = ($('#inspection-number').value || 'Checklist') + '_' + ($('#client-name').value || 'Client').replace(/\s+/g, '_') + '.pdf';
       state.pdfBlob = doc.output('blob');
       state.pdfFileName = fileName;
       doc.save(fileName);
@@ -1309,7 +1313,7 @@
       try {
         await navigator.share({
           title: state.pdfFileName,
-          text: `Petroleum Pumping Equipment Checklist – ${$('#doc-number').value}`,
+          text: `Pump & Dispenser Inspection Checklist – ${$('#inspection-number').value}`,
           files: [file]
         });
       } catch (e) {
@@ -1345,7 +1349,7 @@
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = ($('#doc-number')?.value || 'Checklist') + '_draft.json';
+    a.download = ($('#inspection-number')?.value || 'Checklist') + '_draft.json';
     a.click();
     URL.revokeObjectURL(a.href);
     toast('Draft downloaded to your device', 'success');
@@ -1353,11 +1357,11 @@
 
   // ── Init ───────────────────────────────────────────────────────────────
   function init() {
-    $('#doc-date').value = todayISO();
+    $('#inspection-date').value = todayISO();
     $('#visit-date').value = todayISO();
-    $('#doc-number').value = generateDocNumber();
-    $('#doc-number-display').textContent = $('#doc-number').value;
-    $('#doc-date-display').textContent = todayISO();
+    $('#inspection-number').value = generateInspectionNumber();
+    $('#inspection-number-display').textContent = $('#doc-number').value;
+    $('#inspection-date-display').textContent = todayISO();
 
     initSelectors();
 
