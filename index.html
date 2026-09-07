@@ -571,7 +571,7 @@
           <!-- Row 1 -->
           <div class="form-group">
             <label>Inspection Number <span class="req">*</span></label>
-            <input type="text" id="inspection-number" class="auto-caps" placeholder="e.g. INSP-2026-0001" required />
+            <input type="text" id="doc-number" class="auto-caps" placeholder="e.g. CHK-2026-0847" required />
           </div>
           <div class="form-group">
             <label>Inspection Date <span class="req">*</span></label>
@@ -592,7 +592,7 @@
             <label>County Name <span class="req">*</span></label>
             <div class="county-select-wrap">
               <input type="text" id="county-search" class="auto-caps" placeholder="TYPE TO FILTER COUNTIES…" autocomplete="off" />
-              <select id="county-name" class="auto-caps" required size="1">
+              <select id="county-name" required size="1">
                 <option value="">— SELECT COUNTY —</option>
               </select>
             </div>
@@ -610,12 +610,12 @@
           </div>
           <div class="form-group">
             <label>Equipment Type <span class="req">*</span></label>
-            <select id="lift-type" class="auto-caps" required>
+            <select id="lift-type" required>
               <option value="">— SELECT —</option>
-              <option value="Suction-FDU">SUCTION FDU (INBUILT PUMP)</option>
-              <option value="Remote-FDU">REMOTE FDU (EXTERNAL STP)</option>
+              <option value="SUCTION-FDU">SUCTION FDU (INBUILT PUMP)</option>
+              <option value="REMOTE-FDU">REMOTE FDU (EXTERNAL STP)</option>
               <option value="STP">SUBMERSIBLE TURBINE PUMP (STP)</option>
-              <option value="Bulk-Pump">BULK TRANSFER PUMP (GEAR / VANE / CENTRIFUGAL / DIAPHRAGM / HAND)</option>
+              <option value="BULK-PUMP">BULK TRANSFER PUMP (GEAR / VANE / CENTRIFUGAL / DIAPHRAGM / HAND)</option>
             </select>
           </div>
           <div class="form-group">
@@ -627,7 +627,7 @@
           <!-- Row 4 -->
           <div class="form-group">
             <label>Product / Hose Config</label>
-            <select id="fdu-config" class="auto-caps">
+            <select id="fdu-config">
               <option value="">— SELECT OR N/A —</option>
               <option value="1P-1H">1P-1H (1 PRODUCT, 1 HOSE)</option>
               <option value="1P:2H">1P:2H (1 PRODUCT, 2 HOSES)</option>
@@ -661,7 +661,7 @@
         <div class="basics-grid" style="margin-top:4px;">
           <div class="form-group">
             <label>Year of Installation</label>
-            <select id="lift-year" class="auto-caps">
+            <select id="lift-year">
               <option value="">— SELECT YEAR —</option>
             </select>
           </div>

@@ -537,13 +537,17 @@
       });
     });
 
-    // Auto-capitalise all .auto-caps inputs
+    // Auto-capitalise text inputs/textareas only (never <select> — uppercasing
+    // the value would break option matching and blank the displayed selection)
     $$('.auto-caps').forEach(el => {
+      if (el.tagName === 'SELECT') return;
       el.addEventListener('input', () => {
         const start = el.selectionStart;
         const end = el.selectionEnd;
         el.value = el.value.toUpperCase();
-        if (typeof start === 'number') el.setSelectionRange(start, end);
+        if (typeof start === 'number') {
+          try { el.setSelectionRange(start, end); } catch (_) {}
+        }
       });
     });
 
@@ -1213,7 +1217,7 @@
       sectionBar('1. JOB BASICS, EQUIPMENT TYPE & INSPECTION SCOPE');
       const inspDateFmt = formatDateDDMonYYYY($('#doc-date') ? $('#doc-date').value : '');
       kvLine([
-        { k: 'Inspection Number', v: $('#inspection-number').value },
+        { k: 'Inspection Number', v: $('#doc-number').value },
         { k: 'Inspection Date', v: inspDateFmt }
       ]);
       kvLine([
