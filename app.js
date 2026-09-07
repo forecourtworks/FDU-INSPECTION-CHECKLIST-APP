@@ -359,14 +359,27 @@
 
   // ── Lift type / service type UI ────────────────────────────────────────
   function initSelectors() {
-    $$('#lift-type-grid .lift-type-card').forEach(card => {
-      card.addEventListener('click', () => {
-        $$('#lift-type-grid .lift-type-card').forEach(c => c.classList.remove('selected'));
-        card.classList.add('selected');
-        card.querySelector('input').checked = true;
-        state.equipType = card.querySelector('input').value;
+    // Equipment type is now a <select>
+    const liftSel = $('#lift-type');
+    if (liftSel) {
+      liftSel.addEventListener('change', () => {
+        state.equipType = liftSel.value;
       });
-    });
+    }
+
+    // Populate Year of Installation dropdown (1990 → current year + 1)
+    const yearSel = $('#lift-year');
+    if (yearSel && yearSel.options.length <= 1) {
+      const currentYear = new Date().getFullYear();
+      for (let y = currentYear + 1; y >= 1990; y--) {
+        const opt = document.createElement('option');
+        opt.value = String(y);
+        opt.textContent = String(y);
+        yearSel.appendChild(opt);
+      }
+    }
+
+    // Service type chips
     $$('#service-type-grid .service-chip').forEach(chip => {
       chip.addEventListener('click', (e) => {
         if (e.target.tagName === 'INPUT') return;
@@ -380,6 +393,30 @@
         updateServiceTypes();
       });
     });
+
+    // Auto-capitalise all .auto-caps inputs
+    $$('.auto-caps').forEach(el => {
+      el.addEventListener('input', () => {
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        el.value = el.value.toUpperCase();
+        if (typeof start === 'number') el.setSelectionRange(start, end);
+      });
+    });
+
+    // Date display helper (DD-MON-YYYY)
+    const dateInput = $('#doc-date');
+    if (dateInput) {
+      dateInput.addEventListener('change', () => {
+        const hint = $('#date-display-hint');
+        if (hint && dateInput.value) {
+          const d = new Date(dateInput.value + 'T00:00:00');
+          const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+          const formatted = String(d.getDate()).padStart(2,'0') + '-' + months[d.getMonth()] + '-' + d.getFullYear();
+          hint.textContent = 'Selected: ' + formatted;
+        }
+      });
+    }
   }
 
   function updateServiceTypes() {
@@ -388,11 +425,14 @@
 
   function computeActiveSteps() {
     const base = [0, 1]; // basics + JHA always
-    if (state.serviceTypes.includes('A')) base.push(2);
-    if (state.serviceTypes.includes('B')) base.push(3);
-    if (state.serviceTypes.includes('C') || state.serviceTypes.includes('D')) base.push(4);
-    if (state.serviceTypes.includes('G')) base.push(5);
-    if (state.serviceTypes.includes('F')) base.push(6);
+    // 1 = Pre-Installation, 2 = Post-Installation, 3 = Baseline Condition, 4 = Routine PM, 5 = Regulatory (+ Training)
+    if (state.serviceTypes.includes('1')) base.push(2);
+    if (state.serviceTypes.includes('2')) base.push(3);
+    if (state.serviceTypes.includes('3') || state.serviceTypes.includes('4')) base.push(4);
+    if (state.serviceTypes.includes('5')) {
+      base.push(5); // Regulatory
+      base.push(6); // Training (merged into Regulatory Compliance Auditing)
+    }
     base.push(7, 8, 9, 10); // NC log, photos, sign-off, review always
     state.activeSteps = [...new Set(base)].sort((a, b) => a - b);
   }
@@ -615,15 +655,20 @@
   // ── Validation ─────────────────────────────────────────────────────────
   function validateStep(step) {
     if (step === 0) {
-      const req = ['doc-number', 'doc-date', 'client-name', 'site-name', 'lift-id', 'visit-date', 'tech-lead'];
+      // Sync equipType from select in case change event was missed
+      const liftSel = $('#lift-type');
+      if (liftSel) state.equipType = liftSel.value;
+
+      const req = ['doc-number', 'doc-date', 'client-name', 'site-name', 'lift-id', 'tech-lead'];
       for (const id of req) {
-        if (!$(`#${id}`).value.trim()) {
+        const el = $(`#${id}`);
+        if (!el || !el.value.trim()) {
           toast('Please complete all required fields (*)', 'error');
           return false;
         }
       }
       if (!state.equipType) {
-        toast('Select a Lift Type', 'error');
+        toast('Select an Equipment Type', 'error');
         return false;
       }
       if (!state.serviceTypes.length) {
@@ -742,13 +787,18 @@
   // ── Review ─────────────────────────────────────────────────────────────
   function buildReview() {
     const ncs = collectNCs();
+    const serviceLabels = {
+      '1': 'Pre-Installation', '2': 'Post-Installation', '3': 'Baseline Condition',
+      '4': 'Routine PM', '5': 'Regulatory Compliance'
+    };
+    const svcText = state.serviceTypes.map(s => serviceLabels[s] || s).join(', ') || '—';
     let html = `
       <div class="review-section" style="border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;">
         <h4 style="background:#f3f4f6;padding:8px 12px;font-size:0.85rem;">Document & Equipment</h4>
         <div style="padding:10px 12px;font-size:0.85rem;">
           <b>${$('#doc-number').value}</b> · ${$('#client-name').value} · ${$('#site-name').value}<br>
-          Lift: ${state.equipType} · ID: ${$('#lift-id').value} · Capacity: ${$('#lift-capacity').value || '—'} kg<br>
-          Service: ${state.serviceTypes.join(', ')} · Tech: ${$('#tech-lead').value}
+          Equipment: ${state.equipType} · Asset ID: ${$('#lift-id').value} · Brand: ${$('#equipment-brand').value || '—'}<br>
+          Service: ${svcText} · Tech: ${$('#tech-lead').value}
         </div>
       </div>
       <div class="review-section" style="border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;">
@@ -949,25 +999,31 @@
       // ── Page 1 header ──
       drawPageFrame();
 
-      // Company header
+      // Company header (matches on-screen header)
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
+      doc.setFontSize(13);
       doc.setTextColor(...navy);
-      doc.text('FORECOURT WORKS LIMITED', pageW / 2, y, { align: 'center' });
-      y += 5;
-      doc.setFont('helvetica', 'Normal');
-      doc.setFontSize(8.5);
+      doc.text('FORECOURT WORKS LIMITED', margin, y);
+      y += 4.5;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
       doc.setTextColor(...dark);
-      doc.text('Email:sales@forecourtworks.co.ke |  Tel: +(254) 729002087', pageW / 2, y, { align: 'center' });
-      y += 4;
+      doc.text('Ramco Court, GT 3B, South C, Nairobi', margin, y); y += 3.5;
+      doc.text('Phone: +(254) 729-002-087  |  Email: sales@forecourtworks.co.ke', margin, y); y += 3.5;
+      doc.text('www.forecourtworks.co.ke', margin, y); y += 5;
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(9);
+      doc.setTextColor(184, 95, 10); // accent-ish
+      doc.text('Engineering Reliability Into Every Forecourt', margin, y);
+      y += 5;
       doc.setDrawColor(...navy);
       doc.setLineWidth(0.4);
-      doc.line(margin + 20, y, pageW - margin - 20, y);
+      doc.line(margin, y, pageW - margin, y);
       y += 5;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(...navy);
-      doc.text('  PUMPS & DISPENSERS INSPECTION CHECKLIST', pageW / 2, y, { align: 'center' });
+      doc.text('PUMPS & DISPENSERS INSPECTION CHECKLIST', pageW / 2, y, { align: 'center' });
       y += 6;
 
       // Checklist No + WO No box
@@ -978,39 +1034,61 @@
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(7.5);
       doc.setTextColor(...dark);
-      doc.text('Checklist ID.  ' + ($('#doc-number').value || '—'), margin + 3, y + 5.2);
-      doc.text('Associated Work Order No.  ' + ($('#linked-wo').value || '—'), margin + usable / 2, y + 5.2);
+      doc.text('Checklist Number – Doc version No – ' + ($('#doc-number').value || 'XXXX'), margin + 3, y + 5.2);
+      doc.text('Linked WO#  ' + ($('#linked-wo').value || '—'), margin + usable / 2 + 10, y + 5.2);
       y += 11;
 
       // 1. GENERAL INFORMATION
-      sectionBar('1. GENERAL INFORMATION');
+      sectionBar('1. JOB BASICS, EQUIPMENT TYPE & INSPECTION SCOPE');
+      // Format date as DD-MON-YYYY for PDF
+      let inspDateFmt = '—';
+      if ($('#doc-date').value) {
+        const d = new Date($('#doc-date').value + 'T00:00:00');
+        const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+        inspDateFmt = String(d.getDate()).padStart(2,'0') + '-' + months[d.getMonth()] + '-' + d.getFullYear();
+      }
       kvLine([
-        { k: 'Inspection Date', v: $('#inspection-date').value },
-        { k: 'Inspection Number', v: $('#inspection-number').value }
+        { k: 'Inspection Number', v: $('#doc-number').value },
+        { k: 'Inspection Date', v: inspDateFmt }
       ]);
-      kvLine([    
+      kvLine([
         { k: 'Client Name', v: $('#client-name').value },
         { k: 'Site Location', v: $('#site-name').value }
       ]);
       kvLine([
-        { k: 'Pump/Dispenser Type', v: state.equipType },
-        { k: 'Equipment Brand', v: $('#equipment-brand').value }
-      ]);
-      kvLine([ 
-        { k: 'Unique Asset ID', v: $('#lift-id').value },
-        { k: 'Model No. / Serial No. ', v: $('#equipment-model').value }
+        { k: 'Site Rep Name & Contact', v: $('#site-contact').value || '—' },
+        { k: 'Equipment Type', v: state.equipType || '—' }
       ]);
       kvLine([
-        // { k: 'Last Inpection/PM Date', v: $('#Last-pm').value },
-        { k: 'Next Inspection/PM Date', v: $('#next-pm').value }
+        { k: 'Unique Asset ID', v: $('#lift-id').value },
+        { k: 'Product/Hose Config', v: $('#fdu-config').value || '—' }
       ]);
+      kvLine([
+        { k: 'Equipment Brand', v: $('#equipment-brand').value || '—' },
+        { k: 'Model No.', v: $('#equipment-model').value || '—' }
+      ]);
+      kvLine([
+        { k: 'Serial No.', v: $('#equipment-serial').value || '—' },
+        { k: 'Year of Installation', v: $('#lift-year').value || '—' }
+      ]);
+      kvLine([
+        { k: 'Warranty Validity', v: $('#warranty-validity').value || '—' },
+        { k: 'Vendor Name', v: $('#vendor-name').value || '—' }
+      ]);
+      const serviceLabels = {
+        '1': '1. PRE INSTALLATION INSPECTIONS',
+        '2': '2. POST INSTALLATION INSPECTION',
+        '3': '3. BASELINE CONDITION INSPECTION',
+        '4': '4. ROUTINE PREVENTIVE MAINTENANCE INSPECTION',
+        '5': '5. REGULATORY COMPLIANCE AUDITING'
+      };
+      const svcText = state.serviceTypes.map(s => serviceLabels[s] || s).join('; ') || '—';
       kvLine([
         { k: 'Technician-In-Charge', v: $('#tech-lead').value },
-        { k: 'Service Type(s)', v: state.serviceTypes.join(', ') }
+        { k: 'Service Type(s)', v: svcText }
       ]);
       kvLine([
-        { k: 'Product:Hose Configuration', v: $('#fdu-config').value || '—' },
-        { k: 'Product Dispensed', v: $('#component-ids').value }
+        { k: 'Component / Nozzle IDs', v: $('#component-ids').value || '—' }
       ]);
       y += 2;
 
@@ -1041,9 +1119,9 @@
       });
       y += 2;
 
-      if (state.serviceTypes.includes('A')) dumpTableSection('3. PRE-INSTALLATION SITE READINESS', PREINSTALL_ITEMS);
-      if (state.serviceTypes.includes('B')) dumpTableSection('4. ASSET INSTALLATION CHECKLIST', INSTALL_ITEMS);
-      if (state.serviceTypes.includes('C') || state.serviceTypes.includes('D')) {
+      if (state.serviceTypes.includes('1')) dumpTableSection('3. PRE-INSTALLATION SITE READINESS', PREINSTALL_ITEMS);
+      if (state.serviceTypes.includes('2')) dumpTableSection('4. ASSET INSTALLATION CHECKLIST', INSTALL_ITEMS);
+      if (state.serviceTypes.includes('3') || state.serviceTypes.includes('4')) {
         dumpTableSection('5A. STRUCTURAL & CABINET INTEGRITY', PM_STRUCTURAL);
         dumpTableSection('5B. MECHANICAL SYSTEM HEALTH', PM_MECHANICAL);
         dumpTableSection('5C. ELECTRICAL SYSTEM HEALTH', PM_ELECTRICAL);
@@ -1221,7 +1299,7 @@
           '5F. METER ACCURACY – In-Service FDU',
           'Legal limit (Weights & Measures): +0.5% excess or −0.25% deficiency. All values shown to 2 decimal places.');
       }
-      if (state.serviceTypes.includes('G')) dumpTableSection('6. REGULATORY COMPLIANCE', REG_ITEMS);
+      if (state.serviceTypes.includes('5')) dumpTableSection('6. REGULATORY COMPLIANCE AUDITING (incl. Training)', REG_ITEMS);
 
       // NC Log
       sectionBar('7. NON-CONFORMANCE & CORRECTIVE ACTION LOG');
@@ -1286,7 +1364,7 @@
         drawFooter(i, pageCount);
       }
 
-      const fileName = ($('#inspection-number').value || 'Checklist') + '_' + ($('#client-name').value || 'Client').replace(/\s+/g, '_') + '.pdf';
+      const fileName = ($('#doc-number').value || 'Checklist') + '_' + ($('#client-name').value || 'Client').replace(/\s+/g, '_') + '.pdf';
       state.pdfBlob = doc.output('blob');
       state.pdfFileName = fileName;
       doc.save(fileName);
@@ -1313,7 +1391,7 @@
       try {
         await navigator.share({
           title: state.pdfFileName,
-          text: `Pump & Dispenser Inspection Checklist – ${$('#inspection-number').value}`,
+          text: `Pump & Dispenser Inspection Checklist – ${$('#doc-number').value}`,
           files: [file]
         });
       } catch (e) {
@@ -1349,7 +1427,7 @@
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = ($('#inspection-number')?.value || 'Checklist') + '_draft.json';
+    a.download = ($('#doc-number')?.value || 'Checklist') + '_draft.json';
     a.click();
     URL.revokeObjectURL(a.href);
     toast('Draft downloaded to your device', 'success');
@@ -1357,16 +1435,35 @@
 
   // ── Init ───────────────────────────────────────────────────────────────
   function init() {
-    $('#inspection-date').value = todayISO();
-    $('#visit-date').value = todayISO();
-    $('#inspection-number').value = generateInspectionNumber();
-    $('#inspection-number-display').textContent = $('#doc-number').value;
-    $('#inspection-date-display').textContent = todayISO();
+    // Default inspection date to today
+    if ($('#doc-date')) $('#doc-date').value = todayISO();
+    if ($('#doc-number') && !$('#doc-number').value) {
+      $('#doc-number').value = generateDocNumber();
+    }
+    // Update header badges
+    const numDisp = $('#doc-number-display');
+    if (numDisp) numDisp.textContent = 'Checklist Number – Doc version No – ' + ($('#doc-number').value || 'XXXX');
+    const dateDisp = $('#doc-date-display');
+    if (dateDisp) dateDisp.textContent = todayISO();
+
+    // Keep badge in sync when user edits doc number
+    if ($('#doc-number')) {
+      $('#doc-number').addEventListener('input', () => {
+        if (numDisp) numDisp.textContent = 'Checklist Number – Doc version No – ' + ($('#doc-number').value || 'XXXX');
+      });
+    }
+    if ($('#doc-date')) {
+      $('#doc-date').addEventListener('change', () => {
+        if (dateDisp) dateDisp.textContent = $('#doc-date').value || '—';
+      });
+    }
 
     initSelectors();
 
     $('#btn-start').addEventListener('click', () => {
       updateServiceTypes();
+      const liftSel = $('#lift-type');
+      if (liftSel) state.equipType = liftSel.value;
       if (!validateStep(0)) return;
       computeActiveSteps();
       showStep(nextActiveStep());

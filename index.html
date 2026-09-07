@@ -44,8 +44,29 @@
       z-index: 100;
       box-shadow: 0 2px 12px rgba(0,0,0,0.25);
     }
-    .app-header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; }
-    .app-header .tagline { font-size: 0.72rem; opacity: 0.9; margin-top: 2px; font-style: italic; }
+    .app-header .company-block {
+      text-align: left;
+      line-height: 1.35;
+    }
+    .app-header .company-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 2px;
+    }
+    .app-header .company-details {
+      font-size: 0.68rem;
+      opacity: 0.92;
+      line-height: 1.4;
+    }
+    .app-header .tagline {
+      font-size: 0.78rem;
+      margin-top: 10px;
+      font-style: italic;
+      color: #f0c78a;
+      font-family: Georgia, 'Times New Roman', serif;
+      letter-spacing: 0.01em;
+    }
     .wo-meta { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
     .wo-badge {
       background: rgba(255,255,255,0.15);
@@ -67,6 +88,26 @@
       background: var(--accent);
       width: 0%;
       transition: width 0.35s ease;
+    }
+    /* 3-column form grid for Job Basics */
+    .basics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .basics-grid .form-group {
+      margin-bottom: 0;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 10px 12px;
+    }
+    @media (max-width: 640px) {
+      .basics-grid { grid-template-columns: 1fr; }
+    }
+    .auto-caps {
+      text-transform: uppercase;
     }
     .container { max-width: 820px; margin: 0 auto; padding: 14px; }
     .step-card {
@@ -375,21 +416,116 @@
     .cal-block {
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
+
+    /* ========== PRINT CSS BEST PRACTICES ========== */
+    @page {
+      margin: 20mm 20mm 20mm 20mm;
+      size: A4 portrait;
+    }
+    @page:first {
+      margin-top: 2in; /* Extra space for title/header */
+    }
+    @media print {
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        font-size: 12pt;
+        line-height: 1.5;
+        color: #000;
+        background: #fff;
+        padding-bottom: 0;
+      }
+      h1 { font-size: 18pt; page-break-after: avoid; }
+      h2 { font-size: 16pt; page-break-after: avoid; }
+      h3 { font-size: 14pt; page-break-after: avoid; }
+      p  { font-size: 12pt; }
+      small { font-size: 10pt; }
+
+      .page-break {
+        page-break-before: always;
+      }
+      h1, h2, h3, h4, h5, h6 {
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12pt 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      table, th, td {
+        border: 1px solid #000;
+      }
+      th, td {
+        padding: 8pt;
+        text-align: left;
+      }
+      thead {
+        display: table-header-group;
+        background-color: #e0e0e0;
+        font-weight: bold;
+      }
+      tfoot {
+        display: table-footer-group;
+      }
+      tbody tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      nav, .no-print, .hide-in-print,
+      .nav-footer, .progress-bar, .btn,
+      .app-header .wo-meta, #btn-start {
+        display: none !important;
+      }
+
+      .app-header {
+        background: none !important;
+        color: #000 !important;
+        box-shadow: none !important;
+        position: static !important;
+        padding: 0 0 12pt 0 !important;
+      }
+      .app-header .company-name { color: #0d478c; font-size: 16pt; }
+      .app-header .company-details { color: #333; font-size: 9pt; }
+      .app-header .tagline { color: #b85f0a; font-size: 11pt; }
+
+      .step-card { display: block !important; box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+      .step-header { background: #e0e0e0 !important; color: #000 !important; }
+
+      img {
+        max-width: 100%;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      a {
+        color: #000;
+        text-decoration: underline;
+      }
+      a[href]:after {
+        content: " (" attr(href) ")";
+        font-size: 10pt;
+        color: #666;
+      }
+    }
   </style>
 </head>
 <body>
   <header class="app-header">
-    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:4px;">
-      <div style="flex:1;min-width:0;">
-        <h1>FORECOURT WORKS LIMITED</h1>
-        <div class="tagline">Engineering Reliability into Every Forecourt</div>
-        <div style="font-size:0.65rem;opacity:0.85;margin-top:3px;line-height:1.3;">
-          Ramco Court, Gate 3B, South C · +(254) 729-002-087 · dispatcher@forecourtworks.co.ke
-        </div>
+    <div class="company-block">
+      <div class="company-name">FORECOURT WORKS LIMITED</div>
+      <div class="company-details">
+        Ramco Court, GT 3B, South C, Nairobi<br>
+        Phone: +(254) 729-002-087<br>
+        Email: sales@forecourtworks.co.ke<br>
+        www.forecourtworks.co.ke
       </div>
+      <div class="tagline">Engineering Reliability Into Every Forecourt</div>
     </div>
     <div class="wo-meta">
-      <span class="wo-badge" id="doc-number-display">INSPECTION-XXXX-XXXX</span>
+      <span class="wo-badge" id="doc-number-display">Checklist Number – Doc version No – XXXX</span>
       <span class="wo-badge" id="doc-date-display">—</span>
       <span class="wo-badge" id="doc-status-display">DRAFT</span>
     </div>
@@ -400,127 +536,138 @@
     <!-- STEP 0: BASICS + EQUIPMENT TYPE + SERVICE TYPE -->
     <div class="step-card active" id="step-0" data-step="0">
       <div class="step-header">
-        <span><span class="step-num">1</span> Job Basics, Equipment Type &amp; Service Scope</span>
+        <span><span class="step-num">1</span> Job Basics, Equipment Type &amp; Inspection Scope</span>
       </div>
       <div class="step-body">
-        <p style="font-size:0.88rem;color:var(--muted);margin-bottom:12px;">
+        <p style="font-size:0.88rem;color:var(--muted);margin-bottom:14px;">
           This checklist records inspection observations, test results and conformance against acceptance criteria.
           It is used alongside a Work Order. Troubleshooting &amp; repair actions belong on the Work Order.
         </p>
-        <div class="form-group">
-          <label>Checklist Document Number <span class="req">*</span></label>
-          <input type="text" id="doc-number" placeholder="e.g. CHK-2026-0847" required />
-        </div>
-        <div class="row">
+
+        <h3 style="font-size:0.95rem;color:var(--navy);margin-bottom:10px;font-weight:700;">1. JOB BASICS, EQUIPMENT TYPE &amp; INSPECTION SCOPE</h3>
+
+        <!-- 3-column × 4-row grid – containers stacked, not touching -->
+        <div class="basics-grid">
+          <!-- Row 1 -->
+          <div class="form-group">
+            <label>Inspection Number <span class="req">*</span></label>
+            <input type="text" id="doc-number" class="auto-caps" placeholder="e.g. CHK-2026-0847" required />
+          </div>
           <div class="form-group">
             <label>Inspection Date <span class="req">*</span></label>
             <input type="date" id="doc-date" required />
+            <div class="help" id="date-display-hint" style="margin-top:4px;font-size:0.75rem;">Format: DD-MON-YYYY</div>
           </div>
           <div class="form-group">
-            <label>Linked Work Order No. (if any)</label>
-            <input type="text" id="linked-wo" placeholder="WO-XXXX-XXXX" />
+            <label>Linked WO#</label>
+            <input type="text" id="linked-wo" class="auto-caps" placeholder="WO-XXXX-XXXX" />
           </div>
-        </div>
-        <div class="form-group">
-          <label>Client Name <span class="req">*</span></label>
-          <input type="text" id="client-name" placeholder="e.g. Ainushamsi Energy Limited" required />
-        </div>
-        <div class="row">
+
+          <!-- Row 2 -->
           <div class="form-group">
-            <label>Site / Station <span class="req">*</span></label>
-            <input type="text" id="site-name" required />
+            <label>Client Name <span class="req">*</span></label>
+            <input type="text" id="client-name" class="auto-caps" placeholder="e.g. AINUSHAMSI ENERGY LIMITED" required />
           </div>
           <div class="form-group">
-            <label>Site Contact &amp; Phone</label>
-            <input type="text" id="site-contact" />
+            <label>Site Location <span class="req">*</span></label>
+            <input type="text" id="site-name" class="auto-caps" required />
           </div>
-        </div>
-        <div class="form-group">
-          <label>Site Address</label>
-          <textarea id="site-address" rows="2"></textarea>
-        </div>
-        <div class="row">
+          <div class="form-group">
+            <label>Site Rep Name &amp; Contact</label>
+            <input type="text" id="site-contact" class="auto-caps" placeholder="NAME / PHONE" />
+          </div>
+
+          <!-- Row 3 -->
+          <div class="form-group">
+            <label>Equipment Type <span class="req">*</span></label>
+            <select id="lift-type" class="auto-caps" required>
+              <option value="">— SELECT —</option>
+              <option value="Suction-FDU">SUCTION FDU (INBUILT PUMP)</option>
+              <option value="Remote-FDU">REMOTE FDU (EXTERNAL STP)</option>
+              <option value="STP">SUBMERSIBLE TURBINE PUMP (STP)</option>
+              <option value="Bulk-Pump">BULK TRANSFER PUMP (GEAR / VANE / CENTRIFUGAL / DIAPHRAGM / HAND)</option>
+            </select>
+          </div>
           <div class="form-group">
             <label>Unique Asset ID <span class="req">*</span></label>
-            <input type="text" id="lift-id" required />
+            <input type="text" id="lift-id" class="auto-caps" required />
           </div>
+          <div class="form-group">
+            <label>Product / Hose Config</label>
+            <select id="fdu-config" class="auto-caps">
+              <option value="">— SELECT OR N/A —</option>
+              <option value="1P-1H">1P-1H (1 PRODUCT, 1 HOSE)</option>
+              <option value="1P:2H">1P:2H (1 PRODUCT, 2 HOSES)</option>
+              <option value="2P:2H">2P:2H (2 PRODUCTS, 2 HOSES)</option>
+              <option value="2P:4H">2P:4H (2 PRODUCTS, 4 HOSES)</option>
+              <option value="3P:6H">3P:6H (3 PRODUCTS, 6 HOSES)</option>
+              <option value="N/A">N/A – BULK PUMP / NON-FDU</option>
+            </select>
+          </div>
+
+          <!-- Row 4 -->
           <div class="form-group">
             <label>Equipment Brand</label>
-            <input type="text" id="equipment-brand" placeholder="e.g. Gilbarco / Wayne" />
-          </div>
-        </div>
-        <div class="row">
-          <div class="form-group">
-            <label>Manufacturer</label>
-            <input type="text" id="lift-mfr" />
+            <input type="text" id="equipment-brand" class="auto-caps" placeholder="TOKHEIM, WAYNE, GILBARCO" />
           </div>
           <div class="form-group">
-            <label>Model / Serial No.</label>
-            <input type="text" id="lift-model" />
+            <label>Model No.</label>
+            <input type="text" id="equipment-model" class="auto-caps" placeholder="MODEL NUMBER" />
+          </div>
+          <div class="form-group">
+            <label>Serial No.</label>
+            <input type="text" id="equipment-serial" class="auto-caps" placeholder="SERIAL NUMBER" />
           </div>
         </div>
-        <div class="row">
+
+        <!-- Extra row for Year / Warranty / Vendor (still 3-col) -->
+        <div class="basics-grid" style="margin-top:4px;">
           <div class="form-group">
             <label>Year of Installation</label>
-            <input type="text" id="lift-year" />
+            <select id="lift-year" class="auto-caps">
+              <option value="">— SELECT YEAR —</option>
+            </select>
           </div>
           <div class="form-group">
-            <label>Next PM Due Date</label>
-            <input type="date" id="next-pm" />
+            <label>Warranty Validity</label>
+            <input type="text" id="warranty-validity" class="auto-caps" placeholder="e.g. VALID UNTIL 2027 / EXPIRED" />
+          </div>
+          <div class="form-group">
+            <label>Vendor Name</label>
+            <input type="text" id="vendor-name" class="auto-caps" placeholder="VENDOR / SUPPLIER" />
           </div>
         </div>
-        <div class="form-group" style="margin-top:14px;">
-          <label>Equipment Type <span class="req">*</span></label>
-          <div class="lift-type-grid" id="lift-type-grid">
-            <label class="lift-type-card"><input type="radio" name="lift-type" value="Suction-FDU"> Suction FDU (inbuilt pump)</label>
-            <label class="lift-type-card"><input type="radio" name="lift-type" value="Remote-FDU"> Remote FDU (external STP)</label>
-            <label class="lift-type-card"><input type="radio" name="lift-type" value="STP"> Submersible Turbine Pump (STP)</label>
-            <label class="lift-type-card"><input type="radio" name="lift-type" value="Bulk-Pump"> Bulk Transfer Pump (Gear / Vane / Centrifugal / Diaphragm / Hand)</label>
-          </div>
-        </div>
+
         <div class="form-group" style="margin-top:12px;">
-          <label>FDU Product-to-Hose Configuration (if FDU)</label>
-          <select id="fdu-config">
-            <option value="">— Select or N/A —</option>
-            <option value="1P-1H">1P-1H (1 Product, 1 Hose)</option>
-            <option value="1P:2H">1P:2H (1 Product, 2 Hoses)</option>
-            <option value="2P:2H">2P:2H (2 Products, 2 Hoses)</option>
-            <option value="2P:4H">2P:4H (2 Products, 4 Hoses)</option>
-            <option value="3P:6H">3P:6H (3 Products, 6 Hoses)</option>
-            <option value="N/A">N/A – Bulk pump / non-FDU</option>
-          </select>
-        </div>
-        <div class="form-group">
           <label>Component / Nozzle / Hose / Motor ID(s) under inspection</label>
-          <input type="text" id="component-ids" placeholder="e.g. Nozzle-1, Nozzle-2, Hose-A, Display-L, Pumping Unit #3" />
+          <input type="text" id="component-ids" class="auto-caps" placeholder="e.g. NOZZLE-1, NOZZLE-2, HOSE-A, DISPLAY-L, PUMPING UNIT #3" />
           <div class="help">Record specific component IDs on multi-hose / multi-product dispensers. Use the same IDs in calibration readings and remarks.</div>
         </div>
-        <div class="form-group" style="margin-top:14px;">
+
+        <h3 style="font-size:0.95rem;color:var(--navy);margin:16px 0 10px;font-weight:700;">2. SERVICE TYPE</h3>
+        <div class="form-group">
           <label>Service Type(s) – select all that apply <span class="req">*</span></label>
           <div id="service-type-grid">
-            <label class="service-chip"><input type="checkbox" name="service-type" value="A"> A. Pre-Installation Survey</label>
-            <label class="service-chip"><input type="checkbox" name="service-type" value="B"> B. Installation</label>
-            <label class="service-chip"><input type="checkbox" name="service-type" value="C"> C. Scheduled PM</label>
-            <label class="service-chip"><input type="checkbox" name="service-type" value="D"> D. Condition Inspection</label>
-            <label class="service-chip"><input type="checkbox" name="service-type" value="F"> F. User Training</label>
-            <label class="service-chip"><input type="checkbox" name="service-type" value="G"> G. Regulatory Compliance</label>
+            <label class="service-chip"><input type="checkbox" name="service-type" value="1"> 1. PRE INSTALLATION INSPECTIONS</label>
+            <label class="service-chip"><input type="checkbox" name="service-type" value="2"> 2. POST INSTALLATION INSPECTION</label>
+            <label class="service-chip"><input type="checkbox" name="service-type" value="3"> 3. BASELINE CONDITION INSPECTION</label>
+            <label class="service-chip"><input type="checkbox" name="service-type" value="4"> 4. ROUTINE PREVENTIVE MAINTENANCE INSPECTION</label>
+            <label class="service-chip"><input type="checkbox" name="service-type" value="5"> 5. REGULATORY COMPLIANCE AUDITING</label>
           </div>
-          <div class="help">Troubleshooting &amp; Repair is handled on the Work Order, not this checklist.</div>
+          <div class="help">User training is included under Regulatory Compliance Auditing. Troubleshooting &amp; Repair is handled on the Work Order.</div>
         </div>
-        <div class="row">
-          <div class="form-group">
-            <label>Date of Visit <span class="req">*</span></label>
-            <input type="date" id="visit-date" required />
-          </div>
+
+        <div class="row" style="margin-top:12px;">
           <div class="form-group">
             <label>Lead Technician <span class="req">*</span></label>
-            <input type="text" id="tech-lead" required />
+            <input type="text" id="tech-lead" class="auto-caps" required />
+          </div>
+          <div class="form-group">
+            <label>Assisting Technician</label>
+            <input type="text" id="tech-assist" class="auto-caps" />
           </div>
         </div>
-        <div class="form-group">
-          <label>Assisting Technician</label>
-          <input type="text" id="tech-assist" />
-        </div>
+
         <button type="button" class="btn btn-accent btn-block" id="btn-start" style="margin-top:16px;">
           Continue to Safety &amp; Checklist →
         </button>
@@ -597,7 +744,7 @@
     <!-- STEP 5: REGULATORY -->
     <div class="step-card" id="step-5" data-step="5">
       <div class="step-header">
-        <span><span class="step-num">6</span> Regulatory Compliance Audit</span>
+        <span><span class="step-num">6</span> Regulatory Compliance Auditing (incl. Training)</span>
       </div>
       <div class="step-body">
         <div class="section-note">Mark Available or Missing. Missing items become Non-Conformances.</div>

@@ -2,7 +2,7 @@
 
 A mobile-first, browser-based interactive checklist application for petroleum pumping equipment used at retail fuel stations and bulk transfer facilities.
 
-**Tagline:** *Engineering Reliability into Every Forecourt*
+**Tagline:** *Engineering Reliability Into Every Forecourt*
 
 This app is **complementary** to the Technical Service Work Order app. It focuses on structured inspection, observation recording, pass/fail against acceptance criteria (including legal metrology), and prioritised corrective-action tracking. Troubleshooting and repair scopes remain on the Work Order.
 
@@ -43,16 +43,16 @@ N/A is available on every checklist item so technicians can skip parameters that
 
 ## Supported Service Types
 
-| Code | Service Type                          | Notes                                      |
-|------|---------------------------------------|--------------------------------------------|
-| A    | Pre-Installation / Site Readiness     | Power, space, foundations, containment     |
-| B    | Installation / Commissioning          | OEM installation + initial metrology       |
-| C    | Scheduled Preventive Maintenance (PM) | Full mechanical / electrical / hydraulic / metrology checks |
-| D    | Condition / Status Inspection         | Same checklist as PM, used for condition reports |
-| F    | Operator / User Training              | Safe use, daily checks, emergency procedures |
-| G    | Regulatory / Metrology Compliance     | Weights & Measures, EPRA, KEBS seals, certificates |
+| # | Service Type                                      | Notes                                      |
+|---|---------------------------------------------------|--------------------------------------------|
+| 1 | Pre Installation Inspections                      | Power, space, foundations, containment     |
+| 2 | Post Installation Inspection                      | OEM installation + initial metrology       |
+| 3 | Baseline Condition Inspection                     | Condition baseline report                  |
+| 4 | Routine Preventive Maintenance Inspection         | Full mechanical / electrical / hydraulic / metrology checks |
+| 5 | Regulatory Compliance Auditing                    | Weights & Measures, EPRA, KEBS, seals + User Training (merged) |
 
-**Explicitly excluded:** Troubleshooting & Repair (handled exclusively on the Work Order).
+**Explicitly excluded:** Troubleshooting & Repair (handled exclusively on the Work Order).  
+User Training is merged into Regulatory Compliance Auditing.
 
 ---
 
@@ -209,8 +209,8 @@ petroleum_pumping_app/
 ## Branding
 
 **Company:** FORECOURT WORKS LIMITED  
-**Tagline:** Engineering Reliability into Every Forecourt  
-**Contact:** Ramco Court, Gate 3B, South C · +(254) 729-002-087 · dispatcher@forecourtworks.co.ke
+**Tagline:** *Engineering Reliability Into Every Forecourt*  
+**Contact:** Ramco Court, GT 3B, South C, Nairobi · Phone: +(254) 729-002-087 · Email: sales@forecourtworks.co.ke · www.forecourtworks.co.ke
 
 ---
 
