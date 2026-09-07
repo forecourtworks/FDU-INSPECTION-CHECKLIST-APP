@@ -338,8 +338,8 @@
   }
 
   function generateDocNumber() {
-    const y = new Date().getFullYear()
-    return `CHECKLIST ID- ${y} -001`;
+    const y = new Date().getFullYear();
+    return 'INSP/' + y + '/001';
   }
 
   function toast(msg, type = '') {
@@ -580,6 +580,37 @@
       if (dateInput.value && $('#date-display-hint')) {
         $('#date-display-hint').textContent = 'Selected: ' + formatDateDDMonYYYY(dateInput.value);
       }
+    }
+
+    // Validity Period → enable/disable Valid Until date
+    const validitySel = $('#warranty-validity');
+    const validUntil = $('#valid-until');
+    const validUntilHint = $('#valid-until-hint');
+    function syncValidUntilState() {
+      if (!validitySel || !validUntil) return;
+      const stillValid = validitySel.value === 'STILL VALID';
+      validUntil.disabled = !stillValid;
+      if (!stillValid) {
+        validUntil.value = '';
+        if (validUntilHint) validUntilHint.textContent = 'Disabled when Expired (or not selected)';
+      } else {
+        if (validUntilHint) {
+          validUntilHint.textContent = validUntil.value
+            ? 'Selected: ' + formatDateDDMonYYYY(validUntil.value)
+            : 'Format: DD-MON-YYYY (enabled when Still Valid)';
+        }
+      }
+    }
+    if (validitySel) {
+      validitySel.addEventListener('change', syncValidUntilState);
+      syncValidUntilState();
+    }
+    if (validUntil) {
+      validUntil.addEventListener('change', () => {
+        if (validUntilHint && validUntil.value) {
+          validUntilHint.textContent = 'Selected: ' + formatDateDDMonYYYY(validUntil.value);
+        }
+      });
     }
   }
 
@@ -1242,10 +1273,15 @@
       ]);
       kvLine([
         { k: 'Year of Installation', v: $('#lift-year').value || '—' },
-        { k: 'Warranty Validity', v: $('#warranty-validity').value || '—' }
+        { k: 'Validity Period', v: $('#warranty-validity').value || '—' }
       ]);
       kvLine([
+        { k: 'Valid Until', v: formatDateDDMonYYYY($('#valid-until') ? $('#valid-until').value : '') },
         { k: 'Vendor Name', v: $('#vendor-name').value || '—' }
+      ]);
+      kvLine([
+        { k: 'Vendor Location', v: $('#vendor-location') ? ($('#vendor-location').value || '—') : '—' },
+        { k: 'Vendor Contacts', v: $('#vendor-contacts') ? ($('#vendor-contacts').value || '—') : '—' }
       ]);
       const serviceLabels = {
         '1': '1. PRE INSTALLATION INSPECTIONS',
@@ -1258,9 +1294,6 @@
       kvLine([
         { k: 'Technician-In-Charge', v: $('#tech-lead').value },
         { k: 'Service Type(s)', v: svcText }
-      ]);
-      kvLine([
-        { k: 'Component / Nozzle IDs', v: $('#component-ids').value || '—' }
       ]);
       y += 2;
 
@@ -1614,8 +1647,9 @@
         $('#date-display-hint').textContent = 'Selected: ' + formatDateDDMonYYYY(todayISO());
       }
     }
-    if ($('#doc-number') && !$('#doc-number').value) {
-      $('#doc-number').value = generateDocNumber();
+    // Autofill inspection number (editable)
+    if ($('#doc-number')) {
+      $('#doc-number').value = generateDocNumber(); // e.g. INSP/2026/001
     }
     // Header badge – fixed controlled document number (no date)
     const numDisp = $('#doc-number-display');

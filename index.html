@@ -571,7 +571,7 @@
           <!-- Row 1 -->
           <div class="form-group">
             <label>Inspection Number <span class="req">*</span></label>
-            <input type="text" id="doc-number" class="auto-caps" placeholder="e.g. CHK-2026-0847" required />
+            <input type="text" id="doc-number" class="auto-caps" placeholder="INSP/2026/001" required />
           </div>
           <div class="form-group">
             <label>Inspection Date <span class="req">*</span></label>
@@ -657,7 +657,7 @@
           <div class="form-group" style="visibility:hidden;"></div>
         </div>
 
-        <!-- Extra row for Year / Warranty / Vendor (still 3-col) -->
+        <!-- Extra row for Year / Validity Period / Valid Until -->
         <div class="basics-grid" style="margin-top:4px;">
           <div class="form-group">
             <label>Year of Installation</label>
@@ -666,19 +666,34 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Warranty Validity</label>
-            <input type="text" id="warranty-validity" class="auto-caps" placeholder="e.g. VALID UNTIL 2027 / EXPIRED" />
+            <label>Validity Period</label>
+            <select id="warranty-validity">
+              <option value="">— SELECT —</option>
+              <option value="STILL VALID">STILL VALID</option>
+              <option value="EXPIRED">EXPIRED</option>
+            </select>
           </div>
           <div class="form-group">
-            <label>Vendor Name</label>
-            <input type="text" id="vendor-name" class="auto-caps" placeholder="VENDOR / SUPPLIER" />
+            <label>Valid Until</label>
+            <input type="date" id="valid-until" disabled />
+            <div class="help" id="valid-until-hint" style="margin-top:4px;font-size:0.75rem;">Format: DD-MON-YYYY (enabled when Still Valid)</div>
           </div>
         </div>
 
-        <div class="form-group" style="margin-top:12px;">
-          <label>Component / Nozzle / Hose / Motor ID(s) under inspection</label>
-          <input type="text" id="component-ids" class="auto-caps" placeholder="e.g. NOZZLE-1, NOZZLE-2, HOSE-A, DISPLAY-L, PUMPING UNIT #3" />
-          <div class="help">Record specific component IDs on multi-hose / multi-product dispensers. Use the same IDs in calibration readings and remarks.</div>
+        <!-- Vendor details (replaces Component/Nozzle IDs segment) -->
+        <div class="basics-grid" style="margin-top:12px;">
+          <div class="form-group">
+            <label>Vendor Name</label>
+            <input type="text" id="vendor-name" class="auto-caps" placeholder="VENDOR / SUPPLIER NAME" />
+          </div>
+          <div class="form-group">
+            <label>Vendor Location</label>
+            <input type="text" id="vendor-location" class="auto-caps" placeholder="VENDOR LOCATION / ADDRESS" />
+          </div>
+          <div class="form-group">
+            <label>Vendor Contacts</label>
+            <input type="text" id="vendor-contacts" class="auto-caps" placeholder="PHONE / EMAIL" />
+          </div>
         </div>
 
         <h3 style="font-size:0.95rem;color:var(--navy);margin:16px 0 10px;font-weight:700;">2. SERVICE TYPE</h3>
