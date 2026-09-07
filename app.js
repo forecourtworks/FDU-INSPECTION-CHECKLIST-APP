@@ -1213,7 +1213,7 @@
       sectionBar('1. JOB BASICS, EQUIPMENT TYPE & INSPECTION SCOPE');
       const inspDateFmt = formatDateDDMonYYYY($('#doc-date') ? $('#doc-date').value : '');
       kvLine([
-        { k: 'Inspection Number', v: $('#doc-number').value },
+        { k: 'Inspection Number', v: $('#inspection-number').value },
         { k: 'Inspection Date', v: inspDateFmt }
       ]);
       kvLine([
