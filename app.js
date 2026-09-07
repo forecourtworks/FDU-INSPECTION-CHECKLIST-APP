@@ -357,6 +357,102 @@
     $('#overlay').classList.remove('show');
   }
 
+  // ── County register (hierarchical order, name → 3-digit code) ─────────
+  // Saved for future reference / reuse
+  const COUNTY_REGISTER = [
+    { name: 'MOMBASA', code: '001' },
+    { name: 'KWALE', code: '002' },
+    { name: 'KILIFI', code: '003' },
+    { name: 'RIVER', code: '004' },
+    { name: 'LAMU', code: '005' },
+    { name: 'TAVETA', code: '006' },
+    { name: 'GARISSA', code: '007' },
+    { name: 'WAJIR', code: '008' },
+    { name: 'MANDERA', code: '009' },
+    { name: 'MARSABIT', code: '010' },
+    { name: 'ISIOLO', code: '011' },
+    { name: 'MERU', code: '012' },
+    { name: 'NITHI', code: '013' },
+    { name: 'EMBU', code: '014' },
+    { name: 'KITUI', code: '015' },
+    { name: 'MACHAKOS', code: '016' },
+    { name: 'MAKUENI', code: '017' },
+    { name: 'NYANDARUA', code: '018' },
+    { name: 'NYERI', code: '019' },
+    { name: 'KIRINYAGA', code: '020' },
+    { name: 'MURANGA', code: '021' },
+    { name: 'KIAMBU', code: '022' },
+    { name: 'TURKANA', code: '023' },
+    { name: 'POKOT', code: '024' },
+    { name: 'SAMBURU', code: '025' },
+    { name: 'NZOIA', code: '026' },
+    { name: 'GISHU', code: '027' },
+    { name: 'MARAKWET', code: '028' },
+    { name: 'NANDI', code: '029' },
+    { name: 'BARINGO', code: '030' },
+    { name: 'LAIKIPIA', code: '031' },
+    { name: 'NAKURU', code: '032' },
+    { name: 'NAROK', code: '033' },
+    { name: 'KAJIADO', code: '034' },
+    { name: 'KERICHO', code: '035' },
+    { name: 'BOMET', code: '036' },
+    { name: 'KAKAMEGA', code: '037' },
+    { name: 'VIHIGA', code: '038' },
+    { name: 'BUNGOMA', code: '039' },
+    { name: 'BUSIA', code: '040' },
+    { name: 'SIAYA', code: '041' },
+    { name: 'KISUMU', code: '042' },
+    { name: 'BAY', code: '043' },
+    { name: 'MIGORI', code: '044' },
+    { name: 'KISII', code: '045' },
+    { name: 'NYAMIRA', code: '046' },
+    { name: 'NAIROBI CITY', code: '047' }
+  ];
+
+  // Persist register for future sessions
+  try {
+    localStorage.setItem('fdu_county_register', JSON.stringify(COUNTY_REGISTER));
+  } catch (_) {}
+
+  function formatDateDDMonYYYY(isoOrDate) {
+    if (!isoOrDate) return '—';
+    let d;
+    if (typeof isoOrDate === 'string' && /^\d{4}-\d{2}-\d{2}/.test(isoOrDate)) {
+      d = new Date(isoOrDate + 'T00:00:00');
+    } else if (isoOrDate instanceof Date) {
+      d = isoOrDate;
+    } else {
+      d = new Date(isoOrDate);
+    }
+    if (isNaN(d.getTime())) return '—';
+    const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    return String(d.getDate()).padStart(2, '0') + '-' + months[d.getMonth()] + '-' + d.getFullYear();
+  }
+
+  function threeLetters(str) {
+    const cleaned = (str || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    return (cleaned + 'XXX').slice(0, 3);
+  }
+
+  function updateUniqueAssetId() {
+    const client = $('#client-name') ? $('#client-name').value : '';
+    const site = $('#site-name') ? $('#site-name').value : '';
+    const code = $('#county-code') ? $('#county-code').value : '';
+    if (!client && !site && !code) return;
+    const cli = threeLetters(client);
+    const sit = threeLetters(site);
+    const cty = code || '000';
+    const autoId = cli + '/' + cty + '/' + sit + '/DISP#001';
+    const liftId = $('#lift-id');
+    if (!liftId) return;
+    // Only auto-fill if empty or still matches previous auto pattern
+    const wasAuto = !liftId.dataset.manual || liftId.dataset.manual === '0';
+    if (wasAuto || !liftId.value.trim()) {
+      liftId.value = autoId;
+      liftId.dataset.manual = '0';
+    }
+  }
+
   // ── Lift type / service type UI ────────────────────────────────────────
   function initSelectors() {
     // Equipment type is now a <select>
@@ -377,6 +473,53 @@
         opt.textContent = String(y);
         yearSel.appendChild(opt);
       }
+    }
+
+    // Populate County dropdown from register
+    const countySel = $('#county-name');
+    if (countySel) {
+      COUNTY_REGISTER.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.name;
+        opt.textContent = c.name + ' (' + c.code + ')';
+        opt.dataset.code = c.code;
+        countySel.appendChild(opt);
+      });
+
+      countySel.addEventListener('change', () => {
+        const selected = countySel.options[countySel.selectedIndex];
+        const code = selected && selected.dataset.code ? selected.dataset.code : '';
+        if ($('#county-code')) $('#county-code').value = code;
+        // Collapse list after selection
+        countySel.size = 1;
+        updateUniqueAssetId();
+      });
+    }
+
+    // County search / filter: as user types letters, filter options
+    const countySearch = $('#county-search');
+    if (countySearch && countySel) {
+      countySearch.addEventListener('input', () => {
+        const q = countySearch.value.trim().toUpperCase();
+        let matchCount = 0;
+        Array.from(countySel.options).forEach((opt, idx) => {
+          if (idx === 0) { // placeholder
+            opt.hidden = !!q;
+            return;
+          }
+          const match = !q || opt.value.indexOf(q) === 0 || opt.value.includes(q);
+          opt.hidden = !match;
+          if (match) matchCount++;
+        });
+        // Expand list while filtering
+        countySel.size = Math.min(Math.max(matchCount + 1, 4), 8);
+      });
+      countySearch.addEventListener('focus', () => {
+        countySel.size = 6;
+      });
+      countySearch.addEventListener('blur', () => {
+        setTimeout(() => { countySel.size = 1; }, 200);
+      });
     }
 
     // Service type chips
@@ -404,18 +547,35 @@
       });
     });
 
+    // Unique Asset ID auto-build from Client / County / Site
+    ['client-name', 'site-name'].forEach(id => {
+      const el = $('#' + id);
+      if (el) {
+        el.addEventListener('input', updateUniqueAssetId);
+        el.addEventListener('change', updateUniqueAssetId);
+      }
+    });
+    // Mark manual edits so we don't overwrite user changes
+    const liftId = $('#lift-id');
+    if (liftId) {
+      liftId.addEventListener('input', () => {
+        liftId.dataset.manual = '1';
+      });
+    }
+
     // Date display helper (DD-MON-YYYY)
     const dateInput = $('#doc-date');
     if (dateInput) {
       dateInput.addEventListener('change', () => {
         const hint = $('#date-display-hint');
         if (hint && dateInput.value) {
-          const d = new Date(dateInput.value + 'T00:00:00');
-          const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-          const formatted = String(d.getDate()).padStart(2,'0') + '-' + months[d.getMonth()] + '-' + d.getFullYear();
-          hint.textContent = 'Selected: ' + formatted;
+          hint.textContent = 'Selected: ' + formatDateDDMonYYYY(dateInput.value);
         }
       });
+      // Show formatted value on load if already set
+      if (dateInput.value && $('#date-display-hint')) {
+        $('#date-display-hint').textContent = 'Selected: ' + formatDateDDMonYYYY(dateInput.value);
+      }
     }
   }
 
@@ -659,13 +819,24 @@
       const liftSel = $('#lift-type');
       if (liftSel) state.equipType = liftSel.value;
 
-      const req = ['doc-number', 'doc-date', 'client-name', 'site-name', 'lift-id', 'tech-lead'];
+      // Mandatory: unique asset ID, serial number, client name, county name, site location
+      // (+ existing inspection number, date, equipment type, tech lead, service type)
+      const req = [
+        'doc-number', 'doc-date',
+        'client-name', 'county-name', 'site-name',
+        'lift-id', 'equipment-serial',
+        'tech-lead'
+      ];
       for (const id of req) {
         const el = $(`#${id}`);
         if (!el || !el.value.trim()) {
           toast('Please complete all required fields (*)', 'error');
           return false;
         }
+      }
+      if (!$('#county-code') || !$('#county-code').value) {
+        toast('Please select a valid County', 'error');
+        return false;
       }
       if (!state.equipType) {
         toast('Select an Equipment Type', 'error');
@@ -1034,45 +1205,42 @@
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(7.5);
       doc.setTextColor(...dark);
-      doc.text('Checklist Number – Doc version No – ' + ($('#doc-number').value || 'XXXX'), margin + 3, y + 5.2);
-      doc.text('Linked WO#  ' + ($('#linked-wo').value || '—'), margin + usable / 2 + 10, y + 5.2);
+      doc.text('Checklist No: INSP/FDU&Pumps/ControlledDoc/Vol-01', margin + 3, y + 5.2);
+      doc.text('Linked WO#  ' + ($('#linked-wo').value || '—'), margin + usable * 0.62, y + 5.2);
       y += 11;
 
       // 1. GENERAL INFORMATION
       sectionBar('1. JOB BASICS, EQUIPMENT TYPE & INSPECTION SCOPE');
-      // Format date as DD-MON-YYYY for PDF
-      let inspDateFmt = '—';
-      if ($('#doc-date').value) {
-        const d = new Date($('#doc-date').value + 'T00:00:00');
-        const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-        inspDateFmt = String(d.getDate()).padStart(2,'0') + '-' + months[d.getMonth()] + '-' + d.getFullYear();
-      }
+      const inspDateFmt = formatDateDDMonYYYY($('#doc-date') ? $('#doc-date').value : '');
       kvLine([
         { k: 'Inspection Number', v: $('#doc-number').value },
         { k: 'Inspection Date', v: inspDateFmt }
       ]);
       kvLine([
         { k: 'Client Name', v: $('#client-name').value },
-        { k: 'Site Location', v: $('#site-name').value }
+        { k: 'County', v: ($('#county-name').value || '—') + ($('#county-code').value ? ' (' + $('#county-code').value + ')' : '') }
       ]);
       kvLine([
-        { k: 'Site Rep Name & Contact', v: $('#site-contact').value || '—' },
-        { k: 'Equipment Type', v: state.equipType || '—' }
+        { k: 'Site Location', v: $('#site-name').value },
+        { k: 'Site Rep Name & Contact', v: $('#site-contact').value || '—' }
       ]);
       kvLine([
-        { k: 'Unique Asset ID', v: $('#lift-id').value },
-        { k: 'Product/Hose Config', v: $('#fdu-config').value || '—' }
+        { k: 'Equipment Type', v: state.equipType || '—' },
+        { k: 'Unique Asset ID', v: $('#lift-id').value }
       ]);
       kvLine([
-        { k: 'Equipment Brand', v: $('#equipment-brand').value || '—' },
-        { k: 'Model No.', v: $('#equipment-model').value || '—' }
+        { k: 'Product/Hose Config', v: $('#fdu-config').value || '—' },
+        { k: 'Equipment Brand', v: $('#equipment-brand').value || '—' }
       ]);
       kvLine([
-        { k: 'Serial No.', v: $('#equipment-serial').value || '—' },
-        { k: 'Year of Installation', v: $('#lift-year').value || '—' }
+        { k: 'Model No.', v: $('#equipment-model').value || '—' },
+        { k: 'Serial No.', v: $('#equipment-serial').value || '—' }
       ]);
       kvLine([
-        { k: 'Warranty Validity', v: $('#warranty-validity').value || '—' },
+        { k: 'Year of Installation', v: $('#lift-year').value || '—' },
+        { k: 'Warranty Validity', v: $('#warranty-validity').value || '—' }
+      ]);
+      kvLine([
         { k: 'Vendor Name', v: $('#vendor-name').value || '—' }
       ]);
       const serviceLabels = {
@@ -1322,7 +1490,7 @@
       sectionBar('9. SIGN-OFF');
       bodyLine('TECHNICIAN DECLARATION', 8, true);
       bodyLine($('#tech-declaration').value || '', 7, false);
-      bodyLine('Name: ' + ($('#sig-tech-name').value || '—') + '     Date: ' + ($('#sig-tech-date').value || '—'), 8, false);
+      bodyLine('Name: ' + ($('#sig-tech-name').value || '—') + '     Date: ' + formatDateDDMonYYYY($('#sig-tech-date') ? $('#sig-tech-date').value : ''), 8, false);
       const techSig = getSigDataSafe('sig-tech');
       if (techSig) {
         checkPage(30);
@@ -1331,7 +1499,7 @@
       y += 2;
       bodyLine('CLIENT / SITE REPRESENTATIVE CONFIRMATION', 8, true);
       bodyLine($('#client-declaration').value || '', 7, false);
-      bodyLine('Name: ' + ($('#client-rep-name').value || '—') + '     Title: ' + ($('#client-rep-title').value || '—') + '     Date: ' + ($('#sig-client-date').value || '—'), 8, false);
+      bodyLine('Name: ' + ($('#client-rep-name').value || '—') + '     Title: ' + ($('#client-rep-title').value || '—') + '     Date: ' + formatDateDDMonYYYY($('#sig-client-date') ? $('#sig-client-date').value : ''), 8, false);
       const clientSig = getSigDataSafe('sig-client');
       if (clientSig) {
         checkPage(30);
@@ -1436,26 +1604,19 @@
   // ── Init ───────────────────────────────────────────────────────────────
   function init() {
     // Default inspection date to today
-    if ($('#doc-date')) $('#doc-date').value = todayISO();
+    if ($('#doc-date')) {
+      $('#doc-date').value = todayISO();
+      if ($('#date-display-hint')) {
+        $('#date-display-hint').textContent = 'Selected: ' + formatDateDDMonYYYY(todayISO());
+      }
+    }
     if ($('#doc-number') && !$('#doc-number').value) {
       $('#doc-number').value = generateDocNumber();
     }
-    // Update header badges
+    // Header badge – fixed controlled document number (no date)
     const numDisp = $('#doc-number-display');
-    if (numDisp) numDisp.textContent = 'Checklist Number – Doc version No – ' + ($('#doc-number').value || 'XXXX');
-    const dateDisp = $('#doc-date-display');
-    if (dateDisp) dateDisp.textContent = todayISO();
-
-    // Keep badge in sync when user edits doc number
-    if ($('#doc-number')) {
-      $('#doc-number').addEventListener('input', () => {
-        if (numDisp) numDisp.textContent = 'Checklist Number – Doc version No – ' + ($('#doc-number').value || 'XXXX');
-      });
-    }
-    if ($('#doc-date')) {
-      $('#doc-date').addEventListener('change', () => {
-        if (dateDisp) dateDisp.textContent = $('#doc-date').value || '—';
-      });
+    if (numDisp) {
+      numDisp.textContent = 'Checklist No: INSP/FDU&Pumps/ControlledDoc/Vol-01';
     }
 
     initSelectors();

@@ -109,6 +109,27 @@
     .auto-caps {
       text-transform: uppercase;
     }
+    /* County searchable select */
+    .county-select-wrap {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .county-select-wrap #county-search {
+      margin-bottom: 0;
+    }
+    .county-select-wrap select#county-name {
+      max-height: 140px;
+    }
+    .county-select-wrap select#county-name[size]:not([size="1"]) {
+      position: absolute;
+      z-index: 20;
+      width: 100%;
+      background: #fff;
+      border: 1.5px solid var(--navy);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+    }
     .container { max-width: 820px; margin: 0 auto; padding: 14px; }
     .step-card {
       background: var(--card);
@@ -525,8 +546,7 @@
       <div class="tagline">Engineering Reliability Into Every Forecourt</div>
     </div>
     <div class="wo-meta">
-      <span class="wo-badge" id="doc-number-display">Checklist Number – Doc version No – XXXX</span>
-      <span class="wo-badge" id="doc-date-display">—</span>
+      <span class="wo-badge" id="doc-number-display">Checklist No: INSP/FDU&amp;Pumps/ControlledDoc/Vol-01</span>
       <span class="wo-badge" id="doc-status-display">DRAFT</span>
     </div>
     <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
@@ -569,15 +589,25 @@
             <input type="text" id="client-name" class="auto-caps" placeholder="e.g. AINUSHAMSI ENERGY LIMITED" required />
           </div>
           <div class="form-group">
+            <label>County Name <span class="req">*</span></label>
+            <div class="county-select-wrap">
+              <input type="text" id="county-search" class="auto-caps" placeholder="TYPE TO FILTER COUNTIES…" autocomplete="off" />
+              <select id="county-name" class="auto-caps" required size="1">
+                <option value="">— SELECT COUNTY —</option>
+              </select>
+            </div>
+            <input type="hidden" id="county-code" value="" />
+          </div>
+          <div class="form-group">
             <label>Site Location <span class="req">*</span></label>
             <input type="text" id="site-name" class="auto-caps" required />
           </div>
+
+          <!-- Row 3 -->
           <div class="form-group">
             <label>Site Rep Name &amp; Contact</label>
             <input type="text" id="site-contact" class="auto-caps" placeholder="NAME / PHONE" />
           </div>
-
-          <!-- Row 3 -->
           <div class="form-group">
             <label>Equipment Type <span class="req">*</span></label>
             <select id="lift-type" class="auto-caps" required>
@@ -590,8 +620,11 @@
           </div>
           <div class="form-group">
             <label>Unique Asset ID <span class="req">*</span></label>
-            <input type="text" id="lift-id" class="auto-caps" required />
+            <input type="text" id="lift-id" class="auto-caps" required placeholder="AUTO: CLI/CODE/SIT/DISP#001" />
+            <div class="help" style="margin-top:4px;font-size:0.7rem;">Auto: first 3 of Client / County Code / first 3 of Site / DISP#001 (editable)</div>
           </div>
+
+          <!-- Row 4 -->
           <div class="form-group">
             <label>Product / Hose Config</label>
             <select id="fdu-config" class="auto-caps">
@@ -604,8 +637,6 @@
               <option value="N/A">N/A – BULK PUMP / NON-FDU</option>
             </select>
           </div>
-
-          <!-- Row 4 -->
           <div class="form-group">
             <label>Equipment Brand</label>
             <input type="text" id="equipment-brand" class="auto-caps" placeholder="TOKHEIM, WAYNE, GILBARCO" />
@@ -614,10 +645,16 @@
             <label>Model No.</label>
             <input type="text" id="equipment-model" class="auto-caps" placeholder="MODEL NUMBER" />
           </div>
+        </div>
+
+        <!-- Serial on its own row start for mandatory visibility -->
+        <div class="basics-grid" style="margin-top:4px;">
           <div class="form-group">
-            <label>Serial No.</label>
-            <input type="text" id="equipment-serial" class="auto-caps" placeholder="SERIAL NUMBER" />
+            <label>Serial No. <span class="req">*</span></label>
+            <input type="text" id="equipment-serial" class="auto-caps" placeholder="SERIAL NUMBER" required />
           </div>
+          <div class="form-group" style="visibility:hidden;"></div>
+          <div class="form-group" style="visibility:hidden;"></div>
         </div>
 
         <!-- Extra row for Year / Warranty / Vendor (still 3-col) -->
