@@ -27,8 +27,44 @@
       --shadow: 0 4px 14px rgba(13, 71, 140, 0.08);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @font-face {
+      font-family: 'Roboto';
+      src: url('fonts/Roboto-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Roboto';
+      src: url('fonts/Roboto-Bold.ttf') format('truetype');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Lato';
+      src: url('fonts/Lato-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Lato';
+      src: url('fonts/Lato-Bold.ttf') format('truetype');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Inter';
+      src: url('fonts/Inter-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
     body {
-      font-family: "Segoe UI", Arial, Roboto, sans-serif;
+      font-family: Roboto, Lato, Inter, "Segoe UI", Arial, Helvetica, sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.5;
@@ -43,6 +79,26 @@
       top: 0;
       z-index: 100;
       box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    }
+
+    .app-header-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .app-logo {
+      height: 44px;
+      width: auto;
+      max-width: 220px;
+      object-fit: contain;
+      flex-shrink: 0;
+      background: #000;
+      border-radius: 4px;
+      padding: 4px 8px;
+    }
+    @media (max-width: 480px) {
+      .app-logo { height: 36px; max-width: 160px; }
     }
     .app-header .company-block {
       text-align: left;
@@ -447,8 +503,44 @@
       margin-top: 2in; /* Extra space for title/header */
     }
     @media print {
-      body {
-        font-family: "Segoe UI", Arial, Roboto, sans-serif;
+  
+    @font-face {
+      font-family: 'Roboto';
+      src: url('fonts/Roboto-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Roboto';
+      src: url('fonts/Roboto-Bold.ttf') format('truetype');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Lato';
+      src: url('fonts/Lato-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Lato';
+      src: url('fonts/Lato-Bold.ttf') format('truetype');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Inter';
+      src: url('fonts/Inter-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    body {
+        font-family: Roboto, Lato, Inter, "Segoe UI", Arial, Helvetica, sans-serif;
         font-size: 12pt;
         line-height: 1.5;
         color: #000;
@@ -588,18 +680,21 @@
 </head>
 <body>
   <header class="app-header">
-    <div class="company-block">
-      <div class="company-name">FORECOURT WORKS LIMITED</div>
-      <div class="company-details">
-        Ramco Court, GT 3B, South C, Nairobi<br>
-        Phone: +(254) 729-002-087<br>
-        Email: sales@forecourtworks.co.ke<br>
-        www.forecourtworks.co.ke
+    <div class="app-header-top">
+      <div class="company-block">
+        <div class="company-name">FORECOURT WORKS LIMITED</div>
+        <div class="company-details">
+          Ramco Court, GT 3B, South C, Nairobi<br>
+          Phone: +(254) 729-002-087<br>
+          Email: sales@forecourtworks.co.ke<br>
+          www.forecourtworks.co.ke
+        </div>
+        <div class="tagline">Engineering Reliability Into Every Forecourt</div>
       </div>
-      <div class="tagline">Engineering Reliability Into Every Forecourt</div>
+      <img src="forecourt-logo-banner.png" alt="FORECOURT-SWL" class="app-logo" width="220" height="38" />
     </div>
     <div class="wo-meta">
-      <span class="wo-badge" id="doc-number-display">Controlled Doc No: insp/fdu&amp;pumps/Vol-001</span>
+      <span class="wo-badge" id="doc-number-display">Controlled Doc No: INSP/FDU&amp;Pumps/ControlledDoc/Vol-01</span>
       <span class="wo-badge" id="doc-status-display">DRAFT</span>
     </div>
     <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>

@@ -6,7 +6,7 @@ A mobile-first, browser-based interactive checklist for petroleum pumping equipm
 
 **Contact:** Ramco Court, GT 3B, South C, Nairobi · Phone: +(254) 729-002-087 · Email: sales@forecourtworks.co.ke · www.forecourtworks.co.ke
 
-**Controlled document:** `insp/fdu&pumps/Vol-001`  
+**Controlled document:** `INSP/FDU&Pumps/ControlledDoc/Vol-01`  
 **Inspection instance numbers:** e.g. `INSP/2026/001` (auto-filled, editable)
 
 This app complements the Technical Service Work Order. It records inspection observations, C/NC results, meter accuracy, and prioritised corrective actions. Troubleshooting and repair remain on the Work Order.

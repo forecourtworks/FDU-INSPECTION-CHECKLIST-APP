@@ -16,7 +16,8 @@
     activeSteps: [0, 1, 7, 8, 9, 10], // always-on steps; others added by service type
     equipType: '',
     serviceTypes: [],
-    sigFiles: { tech: null, client: null }
+    sigFiles: { tech: null, client: null },
+    logoMarkDataUrl: null
   };
 
   const $ = (sel) => document.querySelector(sel);
@@ -350,6 +351,115 @@
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────
+
+  // Preload full FORECOURT-SWL mark for PDF (never use FW/FSW text)
+  function preloadLogoMark() {
+    return new Promise((resolve) => {
+      if (state.logoMarkDataUrl) { resolve(state.logoMarkDataUrl); return; }
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const c = document.createElement('canvas');
+          c.width = img.naturalWidth || img.width;
+          c.height = img.naturalHeight || img.height;
+          const ctx = c.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          state.logoMarkDataUrl = c.toDataURL('image/png');
+        } catch (e) {
+          state.logoMarkDataUrl = null;
+        }
+        resolve(state.logoMarkDataUrl);
+      };
+      img.onerror = () => { state.logoMarkDataUrl = null; resolve(null); };
+      img.src = 'forecourt-logo-mark.png';
+    });
+  }
+
+
+  // ── Embedded fonts: Roboto, Lato, Inter (Helvetica only as fallback) ──
+  const FONT_FILES = {
+    Roboto: { normal: 'fonts/Roboto-Regular.ttf', bold: 'fonts/Roboto-Bold.ttf' },
+    Lato: { normal: 'fonts/Lato-Regular.ttf', bold: 'fonts/Lato-Bold.ttf' },
+    Inter: { normal: 'fonts/Inter-Regular.ttf', bold: 'fonts/Inter-Regular.ttf' }
+  };
+  let fontsReady = false;
+  let activePdfFont = 'helvetica'; // fallback until embedded
+
+  function arrayBufferToBase64(buffer) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(binary);
+  }
+
+  async function registerPdfFonts(doc) {
+    if (fontsReady && activePdfFont !== 'helvetica') {
+      try { doc.setFont(activePdfFont, 'normal'); } catch (_) {}
+      return activePdfFont;
+    }
+    const order = ['Roboto', 'Lato', 'Inter'];
+    for (const family of order) {
+      try {
+        const paths = FONT_FILES[family];
+        const resN = await fetch(paths.normal);
+        if (!resN.ok) continue;
+        const b64n = arrayBufferToBase64(await resN.arrayBuffer());
+        const fileN = family + '-Regular.ttf';
+        doc.addFileToVFS(fileN, b64n);
+        doc.addFont(fileN, family, 'normal');
+        try {
+          const resB = await fetch(paths.bold);
+          if (resB.ok) {
+            const b64b = arrayBufferToBase64(await resB.arrayBuffer());
+            const fileB = family + '-Bold.ttf';
+            doc.addFileToVFS(fileB, b64b);
+            doc.addFont(fileB, family, 'bold');
+          } else {
+            doc.addFont(fileN, family, 'bold');
+          }
+        } catch (_) {
+          doc.addFont(fileN, family, 'bold');
+        }
+        activePdfFont = family;
+        fontsReady = true;
+        doc.setFont(family, 'normal');
+        return family;
+      } catch (e) {
+        console.warn('Font load failed', family, e);
+      }
+    }
+    activePdfFont = 'helvetica';
+    return 'helvetica';
+  }
+
+  function setAppFont(doc, style, size) {
+    const st = style === 'bold' ? 'bold' : (style === 'italic' ? 'italic' : 'normal');
+    try {
+      if (activePdfFont !== 'helvetica') {
+        // Embedded TTF may not have italic — map italic to normal
+        const use = (st === 'italic') ? 'normal' : st;
+        doc.setFont(activePdfFont, use);
+      } else {
+        doc.setFont('helvetica', st === 'italic' ? 'italic' : st);
+      }
+    } catch (_) {
+      try { doc.setFont('helvetica', st === 'bold' ? 'bold' : 'normal'); } catch (__) {}
+    }
+    if (size) doc.setFontSize(size);
+  }
+
+  /** Draw text clipped to column width (prevents spill into next column) */
+  function textInCol(doc, text, x, y, maxW, opts) {
+    const s = String(text == null ? '' : text);
+    const lines = doc.splitTextToSize(s, Math.max(2, maxW - 1));
+    doc.text(lines[0] || '', x, y, opts || {});
+    return lines;
+  }
+
   function todayISO() {
     return new Date().toISOString().slice(0, 10);
   }
@@ -1108,9 +1218,11 @@
       if (!go) return;
     }
     showOverlay('Generating PDF…');
+    await preloadLogoMark();
     try {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      await registerPdfFonts(doc);
       const pageW = 210, pageH = 297;
       const outer = 7, inner = 9, margin = 14;
       const usable = pageW - margin * 2;
@@ -1128,35 +1240,33 @@
         doc.rect(outer, outer, pageW - outer * 2, pageH - outer * 2);
         doc.setLineWidth(0.25);
         doc.rect(inner, inner, pageW - inner * 2, pageH - inner * 2);
-        // Logo mark at top-right interacting with borders
-        const logoX = pageW - outer - 18;
-        const logoY = outer - 1.5;
-        doc.setFillColor(...navy);
-        doc.roundedRect(logoX, logoY, 16, 12, 1.2, 1.2, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7);
-        doc.text('FW', logoX + 8, logoY + 5.2, { align: 'center' });
-        doc.setFontSize(4.5);
-        doc.text('FSW', logoX + 8, logoY + 9.2, { align: 'center' });
+        // Full FORECOURT-SWL logo mark (PNG) — never FW/FSW text
+        if (state.logoMarkDataUrl) {
+          const logoW = 36; // mm wide (full lockup: icon + FORECOURT-SWL)
+          const logoH = logoW * (104 / 600); // intrinsic ratio of mark PNG
+          const logoX = pageW - outer - logoW - 2;
+          const logoY = outer + 1.5;
+          try {
+            doc.addImage(state.logoMarkDataUrl, 'PNG', logoX, logoY, logoW, logoH);
+          } catch (e) {
+            // no text fallback — omit mark if image fails
+          }
+        }
       }
 
       function drawFooter(pageNum, totalPages) {
         // Left & right footer text above the inner boundary line
         const fy = pageH - inner - 3.5;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(6.5);
+        setAppFont(doc, 'normal', 6.5);
         doc.setTextColor(...navy);
-        doc.text('FSW | Pumps & Dispensers Inspection Checklist', margin, fy);
+        doc.text('FORECOURT-SWL | Pumps & Dispensers Inspection Checklist', margin, fy);
         doc.text('Page ' + pageNum + ' of ' + totalPages, pageW - margin, fy, { align: 'right' });
         // Middle confidential centred above inner boundary
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(5.5);
+        setAppFont(doc, 'normal', 5.5);
         doc.setTextColor(...grey);
-        doc.text('CONFIDENTIAL - FSW Use Only', pageW / 2, fy, { align: 'center' });
+        doc.text('CONFIDENTIAL - FORECOURT WORKS LIMITED', pageW / 2, fy, { align: 'center' });
         // Brand line below the outer boundary
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(5);
+        setAppFont(doc, 'normal', 5);
         doc.setTextColor(...navy);
         doc.text('Engineering Reliability into Every Forecourt', pageW / 2, pageH - outer + 3.5, { align: 'center' });
       }
@@ -1178,8 +1288,7 @@
         doc.setFillColor(230, 230, 230);
         doc.rect(x, y, w, h, 'FD');
         doc.setTextColor(180, 180, 180);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
+        setAppFont(doc, 'bold', 9);
         doc.text('RUBBERSTAMP HERE', x + w / 2, y + h / 2 + 1.5, { align: 'center' });
         doc.setTextColor(0, 0, 0);
       }
@@ -1189,16 +1298,14 @@
         doc.setFillColor(...navy);
         doc.rect(margin, y, usable, 6.5, 'F');
         doc.setTextColor(255, 255, 255);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8.5);
+        setAppFont(doc, 'bold', 8.5);
         doc.text(title, margin + 2, y + 4.5);
         y += 9;
         doc.setTextColor(...dark);
       }
 
       function bodyLine(txt, size, bold) {
-        doc.setFont('helvetica', bold ? 'bold' : 'normal');
-        doc.setFontSize(size || 8);
+        setAppFont(doc, bold ? 'bold' : 'normal', size || 8);
         const lines = doc.splitTextToSize(String(txt || '-'), usable);
         checkPage(lines.length * 3.8 + 2);
         doc.text(lines, margin, y);
@@ -1209,12 +1316,12 @@
         doc.setFontSize(7.5);
         let x = margin;
         pairs.forEach((p) => {
-          doc.setFont('helvetica', 'bold');
+          setAppFont(doc, 'bold');
           doc.setTextColor(...navy);
           const k = p.k + ': ';
           doc.text(k, x, y);
           const kw = doc.getTextWidth(k);
-          doc.setFont('helvetica', 'normal');
+          setAppFont(doc, 'normal');
           doc.setTextColor(...dark);
           doc.text(String(p.v || '-'), x + kw, y);
           x += usable / pairs.length;
@@ -1246,11 +1353,10 @@
         doc.setFillColor(13, 71, 140);
         doc.rect(margin, y, usable, 6, 'F');
         doc.setTextColor(255, 255, 255);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6.5);
+        setAppFont(doc, 'bold', 6.5);
         let hx = margin + 1;
         headers.forEach((h, i) => {
-          doc.text(h, hx, y + 4);
+          textInCol(doc, h, hx, y + 4, colW[i]);
           hx += colW[i];
         });
         y += 7;
@@ -1282,17 +1388,17 @@
             doc.line(lx, y, lx, y + rowH);
           }
 
-          doc.setFont('helvetica', 'normal');
+          setAppFont(doc, 'normal');
           doc.setFontSize(6.5);
           doc.setTextColor(...dark);
           doc.text(itemLines, margin + 1, y + 3.2);
           doc.text(critLines, margin + colW[0] + 1, y + 3.2);
 
-          doc.setFont('helvetica', 'bold');
+          setAppFont(doc, 'bold');
           doc.setTextColor(...st.colour);
           doc.text(st.text, margin + colW[0] + colW[1] + 1, y + 3.2);
 
-          doc.setFont('helvetica', 'normal');
+          setAppFont(doc, 'normal');
           doc.setTextColor(...dark);
           doc.text(remLines, margin + colW[0] + colW[1] + colW[2] + 1, y + 3.2);
 
@@ -1305,19 +1411,16 @@
       drawPageFrame();
 
       // Company header (matches on-screen header)
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
+      setAppFont(doc, 'bold', 13);
       doc.setTextColor(...navy);
       doc.text('FORECOURT WORKS LIMITED', margin, y);
       y += 4.5;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
+      setAppFont(doc, 'normal', 8);
       doc.setTextColor(...dark);
       doc.text('Ramco Court, GT 3B, South C, Nairobi', margin, y); y += 3.5;
       doc.text('Phone: +(254) 729-002-087  |  Email: sales@forecourtworks.co.ke', margin, y); y += 3.5;
       doc.text('www.forecourtworks.co.ke', margin, y); y += 5;
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(9);
+      setAppFont(doc, 'normal', 9);
       doc.setTextColor(184, 95, 10); // accent-ish
       doc.text('Engineering Reliability Into Every Forecourt', margin, y);
       y += 5;
@@ -1325,8 +1428,7 @@
       doc.setLineWidth(0.4);
       doc.line(margin, y, pageW - margin, y);
       y += 5;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
+      setAppFont(doc, 'bold', 11);
       doc.setTextColor(...navy);
       doc.text('PUMPS & DISPENSERS INSPECTION CHECKLIST', pageW / 2, y, { align: 'center' });
       y += 6;
@@ -1336,10 +1438,9 @@
       doc.setDrawColor(...navy);
       doc.setLineWidth(0.3);
       doc.rect(margin, y, usable, 8, 'FD');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.5);
+      setAppFont(doc, 'bold', 7.5);
       doc.setTextColor(...dark);
-      doc.text('Controlled Doc No: insp/fdu&pumps/Vol-001', margin + 3, y + 5.2);
+      doc.text('Controlled Doc No: INSP/FDU&Pumps/ControlledDoc/Vol-01', margin + 3, y + 5.2);
       doc.text('Linked WO#  ' + ($('#linked-wo').value || '-'), margin + usable * 0.62, y + 5.2);
       y += 11;
 
@@ -1411,12 +1512,11 @@
         const val = sel ? sel.value : '-';
         const st = statusFull(val);
         checkPage(8);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
+        setAppFont(doc, 'normal', 7);
         doc.setTextColor(...dark);
         const lines = doc.splitTextToSize(it.item + ' - ' + it.criteria, usable * 0.72);
         doc.text(lines, margin, y);
-        doc.setFont('helvetica', 'bold');
+        setAppFont(doc, 'bold');
         doc.setTextColor(...st.colour);
         doc.text(st.text, margin + usable * 0.74, y);
         y += Math.max(lines.length * 3.5, 4.5);
@@ -1443,48 +1543,42 @@
             return;
           }
 
-          // Header details for each reading group
           valid.forEach((r, i) => {
             const c = calcMeterError(parseFloat(r.indicated), parseFloat(r.actual), r.capacity, stage);
-            checkPage(28);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(7.5);
+            checkPage(36);
+            setAppFont(doc, 'bold', 7.5);
             doc.setTextColor(...navy);
             doc.text('Reading No. ' + (i + 1), margin, y);
             y += 4;
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(7);
+            setAppFont(doc, 'normal', 7);
             doc.setTextColor(...dark);
             const hdr = 'Nozzle ID: ' + (r.nozzleId || '-') +
-              '   |   Prover Tank Size: ' + Number(r.capacity).toFixed(2) + ' L' +
-              '   |   Approximate Flow Rate: ' + (r.flow ? Number(r.flow).toFixed(2) + ' L/min' : '-');
+              '  |  Prover: ' + Number(r.capacity).toFixed(2) + ' L' +
+              '  |  Variance: ' + (c.varianceL >= 0 ? '+' : '') + c.varianceL.toFixed(2) + ' L (' + c.regType + ')';
             const hdrLines = doc.splitTextToSize(hdr, usable);
             doc.text(hdrLines, margin, y);
             y += hdrLines.length * 3.5 + 2;
 
-            // 6-column table
-            const colW = [usable * 0.17, usable * 0.17, usable * 0.15, usable * 0.14, usable * 0.18, usable * 0.19];
-            const headers = ['Dispenser Indicated (L)', 'Prover Actual (L)', 'Error (ml)', '% Error', 'ml Loss per Litre', 'Status'];
-            const rowH = 6.5;
+            // 6-col table — shorter headers so text stays inside cells
+            const colW = [usable * 0.16, usable * 0.16, usable * 0.15, usable * 0.18, usable * 0.20, usable * 0.15];
+            const headers = ['Indicated (L)', 'True Proven (L)', 'Variance (L)', 'Rel vs True %', 'Rel vs Meter %', 'Status'];
+            const rowH = 7;
 
-            // Header row
             checkPage(rowH + 4);
             doc.setFillColor(13, 71, 140);
             doc.rect(margin, y, usable, rowH, 'F');
             doc.setTextColor(255, 255, 255);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(6);
-            let hx = margin + 1;
+            setAppFont(doc, 'bold', 5.5);
+            let hx = margin + 0.8;
             headers.forEach((h, hi) => {
-              doc.text(h, hx, y + 4.2);
+              textInCol(doc, h, hx, y + 4.5, colW[hi]);
               hx += colW[hi];
             });
             y += rowH;
 
-            // Data row - light grid (~15% opacity feel)
             checkPage(rowH + 2);
-            doc.setDrawColor(200, 210, 220);
-            doc.setLineWidth(0.12);
+            doc.setDrawColor(180, 190, 200);
+            doc.setLineWidth(0.15);
             doc.rect(margin, y, usable, rowH);
             let lx = margin;
             for (let cIdx = 0; cIdx < 5; cIdx++) {
@@ -1492,52 +1586,50 @@
               doc.line(lx, y, lx, y + rowH);
             }
 
-            const sMl = c.errorMl > 0 ? '+' : '';
-            const sPct = c.errorPct > 0 ? '+' : '';
-            const sPer = c.perLitreMl > 0 ? '+' : '';
             const cells = [
               Number(r.indicated).toFixed(2),
               Number(r.actual).toFixed(2),
-              sMl + c.errorMl.toFixed(2),
-              sPct + c.errorPct.toFixed(2) + '%',
-              sPer + c.perLitreMl.toFixed(2),
+              (c.varianceL >= 0 ? '+' : '') + c.varianceL.toFixed(2),
+              (c.relVsTrue >= 0 ? '+' : '') + c.relVsTrue.toFixed(2) + '%',
+              (c.relVsInd >= 0 ? '+' : '') + c.relVsInd.toFixed(2) + '%',
               c.status
             ];
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(7);
+            setAppFont(doc, 'normal', 7);
             doc.setTextColor(...dark);
-            let cx = margin + 1;
+            let cx = margin + 0.8;
             cells.forEach((cell, ci) => {
               if (ci === 5) {
-                doc.setFont('helvetica', 'bold');
+                setAppFont(doc, 'bold', 7);
                 doc.setTextColor(...(c.pass ? green : red));
               } else {
-                doc.setFont('helvetica', 'normal');
+                setAppFont(doc, 'normal', 7);
                 doc.setTextColor(...dark);
               }
-              doc.text(cell, cx, y + 4.2);
+              textInCol(doc, cell, cx, y + 4.8, colW[ci]);
               cx += colW[ci];
             });
-            y += rowH + 3;
+            y += rowH + 2.5;
 
-            // Calibration Result Analysis
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(7.5);
+            setAppFont(doc, 'bold', 7);
             doc.setTextColor(...dark);
             doc.text('Calibration Result Analysis', margin, y);
-            y += 4;
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(7);
+            y += 3.8;
+            setAppFont(doc, 'normal', 7);
             doc.setTextColor(...(c.pass ? green : red));
-            const analysisLines = doc.splitTextToSize(c.narrative, usable);
+            const analysisLines = doc.splitTextToSize(c.narrative + ' Status: ' + c.status + ' (limit ' + c.limitText + ').', usable);
             doc.text(analysisLines, margin, y);
-            y += analysisLines.length * 3.6 + 4;
+            y += analysisLines.length * 3.5 + 2;
+            // Verdict line
+            setAppFont(doc, 'bold', 7);
+            doc.setTextColor(...(c.pass ? green : red));
+            const vLines = doc.splitTextToSize((c.pass ? 'PASS: ' : 'FAIL: ') + c.verdict.replace(/^VERDICT:\s*/i, ''), usable);
+            doc.text(vLines, margin, y);
+            y += vLines.length * 3.5 + 5;
           });
 
-          // Repeatability Summary (when >=2 valid readings)
           if (valid.length >= 2) {
             const calcs = valid.map(r => calcMeterError(parseFloat(r.indicated), parseFloat(r.actual), r.capacity, stage));
-            const pcts = calcs.map(v => v.errorPct);
+            const pcts = calcs.map(v => v.relVsInd);
             const minPct = Math.min(...pcts);
             const maxPct = Math.max(...pcts);
             const spread = maxPct - minPct;
@@ -1547,25 +1639,26 @@
               : 'ONE OR MORE OUTSIDE LIMITS - investigate drift / meter condition';
 
             sectionBar('Repeatability Summary');
-            const rColW = [usable * 0.22, usable * 0.22, usable * 0.22, usable * 0.34];
-            const rHeaders = ['Error range bottom limit', 'Error range top limit', 'Error range spread', 'Overall interpretation'];
-            const rRowH = 7;
+            const rColW = [usable * 0.20, usable * 0.20, usable * 0.18, usable * 0.42];
+            const rHeaders = ['Bottom limit %', 'Top limit %', 'Spread %', 'Overall interpretation'];
+            setAppFont(doc, 'normal', 6.5);
+            const interpLines = doc.splitTextToSize(interpretation, rColW[3] - 2);
+            const rRowH = Math.max(10, 3.2 + interpLines.length * 3.4);
 
-            checkPage(rRowH * 2 + 4);
+            checkPage(rRowH + 10);
             doc.setFillColor(13, 71, 140);
-            doc.rect(margin, y, usable, rRowH, 'F');
+            doc.rect(margin, y, usable, 7, 'F');
             doc.setTextColor(255, 255, 255);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(6);
-            let rhx = margin + 1;
+            setAppFont(doc, 'bold', 6);
+            let rhx = margin + 0.8;
             rHeaders.forEach((h, hi) => {
-              doc.text(h, rhx, y + 4.5);
+              textInCol(doc, h, rhx, y + 4.5, rColW[hi]);
               rhx += rColW[hi];
             });
-            y += rRowH;
+            y += 7;
 
-            doc.setDrawColor(200, 210, 220);
-            doc.setLineWidth(0.12);
+            doc.setDrawColor(180, 190, 200);
+            doc.setLineWidth(0.15);
             doc.rect(margin, y, usable, rRowH);
             let rlx = margin;
             for (let cIdx = 0; cIdx < 3; cIdx++) {
@@ -1579,22 +1672,23 @@
               spread.toFixed(2) + '%',
               interpretation
             ];
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(6.5);
-            doc.setTextColor(...dark);
-            let rcx = margin + 1;
+            let rcx = margin + 0.8;
             rCells.forEach((cell, ci) => {
               if (ci === 3) {
-                doc.setFont('helvetica', 'bold');
+                setAppFont(doc, 'bold', 6.5);
                 doc.setTextColor(...(allPass ? green : red));
+              } else {
+                setAppFont(doc, 'normal', 7);
+                doc.setTextColor(...dark);
               }
-              const lines = doc.splitTextToSize(cell, rColW[ci] - 2);
-              doc.text(lines, rcx, y + 4.5);
+              const lines = doc.splitTextToSize(String(cell), rColW[ci] - 2);
+              doc.text(lines, rcx, y + 4.2);
               rcx += rColW[ci];
             });
-            y += rRowH + 4;
+            y += rRowH + 5;
           }
         }
+
 
         dumpMeterAccuracy('new',
           '5E. METER ACCURACY - New & Never Used Before FDU',
@@ -1668,7 +1762,7 @@
           if (!p.dataUrl.startsWith('data:image')) return;
           doc.addPage();
           drawPageFrame();
-          doc.setFont('helvetica', 'bold');
+          setAppFont(doc, 'bold');
           doc.setFontSize(9);
           doc.setTextColor(...navy);
           doc.text('Photographic Evidence - ' + p.name, margin, 18);
@@ -1776,6 +1870,7 @@
     }
 
     initSelectors();
+    preloadLogoMark();
 
     $('#btn-start').addEventListener('click', () => {
       updateServiceTypes();
