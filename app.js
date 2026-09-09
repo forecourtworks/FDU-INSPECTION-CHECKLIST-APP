@@ -1581,7 +1581,7 @@
       doc.rect(margin, y, usable, 8, 'FD');
       setAppFont(doc, 'bold', 7.5);
       doc.setTextColor(...dark);
-      doc.text('Controlled Doc No: INSP/FDU&Pumps/ControlledDoc/Vol-01', margin + 3, y + 5.2);
+      doc.text('Controlled Doc No: insp/fdu&pumps/Vol-001', margin + 3, y + 5.2);
       doc.text('Linked WO#  ' + ($('#linked-wo').value || '-'), margin + usable * 0.62, y + 5.2);
       y += 11;
 
