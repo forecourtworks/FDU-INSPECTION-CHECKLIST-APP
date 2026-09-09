@@ -1,5 +1,5 @@
 /**
- * FORECOURT WORKS LTD – Pumps & Dispensers Inspection Checklist App
+ * FORECOURT WORKS LTD - Pumps & Dispensers Inspection Checklist App
  * Complementary to the Technical Service Work Order. Focus: inspection, C/NC, prioritised actions.
  * Troubleshooting & Repair is deliberately excluded (handled on Work Order).
  */
@@ -15,7 +15,8 @@
     pdfFileName: '',
     activeSteps: [0, 1, 7, 8, 9, 10], // always-on steps; others added by service type
     equipType: '',
-    serviceTypes: []
+    serviceTypes: [],
+    sigFiles: { tech: null, client: null }
   };
 
   const $ = (sel) => document.querySelector(sel);
@@ -34,8 +35,8 @@
 
   const PREINSTALL_ITEMS = [
     { id: 'pi1', item: 'Island / foundation readiness', criteria: 'Adequate island size, level, containment sump present if required. Drainage clear of product path.' },
-    { id: 'pi2', item: 'Power supply – voltage & phases', criteria: 'Correct voltage (230/400 V), phase (1ph/3ph) and frequency per motor/nameplate. Dedicated circuit.' },
-    { id: 'pi3', item: 'Power supply – capacity & protection', criteria: 'Correct breaker rating, earth-leakage / residual current protection available and correctly sized.' },
+    { id: 'pi2', item: 'Power supply - voltage & phases', criteria: 'Correct voltage (230/400 V), phase (1ph/3ph) and frequency per motor/nameplate. Dedicated circuit.' },
+    { id: 'pi3', item: 'Power supply - capacity & protection', criteria: 'Correct breaker rating, earth-leakage / residual current protection available and correctly sized.' },
     { id: 'pi4', item: 'Intrinsically safe / Ex zoning', criteria: 'Hazardous area classification confirmed. Cable glands and equipment Ex-rated for Zone as required.' },
     { id: 'pi5', item: 'Product piping readiness', criteria: 'Correct pipe size, material, slope. Isolation valves present. No buried joints under island without access.' },
     { id: 'pi6', item: 'STP / tank interface (remote)', criteria: 'Tank manhole, packer, riser clear. Electrical junction box accessible. Line leak detector port available.' },
@@ -55,7 +56,7 @@
     { id: 'in7', item: 'Filter & strainer installation', criteria: 'Correct micron rating filter installed, dated, oriented for flow. Housing sealed.' },
     { id: 'in8', item: 'Hose, nozzle, breakaway, swivel', criteria: 'Correct hose length, no contact with ground in rest position. Breakaway and nozzle within service life dates.' },
     { id: 'in9', item: 'Air eliminator / vapour recovery (if fitted)', criteria: 'Air eliminator vent clear. Stage II components functional or correctly capped/sealed.' },
-    { id: 'in10', item: 'Functional test – no load / dry run checks', criteria: 'Controls respond correctly. No unusual noise or vibration. E-stop cuts power instantly.' },
+    { id: 'in10', item: 'Functional test - no load / dry run checks', criteria: 'Controls respond correctly. No unusual noise or vibration. E-stop cuts power instantly.' },
     { id: 'in11', item: 'Initial metrology verification (new/repair)', criteria: 'Accuracy within 0.25 % excess only (Kenya Weights & Measures). Under-dispense not permitted. Seals applied.' },
     { id: 'in12', item: 'Safety signage & operating instructions', criteria: 'Capacity/price display legible. Warning labels and fueling instructions posted and readable.' },
     { id: 'in13', item: 'Handover documentation', criteria: 'OEM manual, verification certificate, training records and this checklist handed over.' }
@@ -75,7 +76,7 @@
     { id: 'pm2', item: 'Filter & strainer', criteria: 'Filter clean or within change interval, correctly dated. Housing sealed. No bypass evidence.' },
     { id: 'pm3', item: 'Air eliminator (suction systems)', criteria: 'Clean, dry, vent tube not obstructed. No fuel discharge from vent.' },
     { id: 'pm4', item: 'V-belt / coupling (suction pumps)', criteria: 'Correct tension, no excessive wear or cracking. Guards in place.' },
-    { id: 'pm5', item: 'Hose, swivel, breakaway, nozzle', criteria: 'Hose not touching ground at rest (or within allowed length). No cracks, blisters. Breakaway & nozzle within “remove by” date. Auto shut-off functional.' },
+    { id: 'pm5', item: 'Hose, swivel, breakaway, nozzle', criteria: 'Hose not touching ground at rest (or within allowed length). No cracks, blisters. Breakaway & nozzle within "remove by" date. Auto shut-off functional.' },
     { id: 'pm6', item: 'Hose retriever / retractor', criteria: 'Retracts fully and smoothly. No broken springs or cables.' },
     { id: 'pm7', item: 'STP impeller / check valve / LLD', criteria: 'Flow rate at nozzle within expected range. Line leak detector (mechanical or electronic) passes required test rate.' },
     { id: 'pm8', item: 'Bulk pump mechanical condition', criteria: 'Gear/vane/centrifugal/diaphragm elements free of excessive wear. No unusual noise, vibration or seal leakage. Hand pumps: free rotation, no binding.' }
@@ -83,9 +84,9 @@
 
   const PM_ELECTRICAL = [
     { id: 'pe1', item: 'Grounding / bonding continuity', criteria: 'Continuity chassis/pipework to earth satisfactory. Bonding leads intact on hoses where required.' },
-    { id: 'pe2', item: 'Motor insulation (Megger)', criteria: 'Insulation resistance > 1 MΩ (or OEM min). No signs of overheating or discoloration.' },
-    { id: 'pe3', item: 'Supply voltage', criteria: 'Voltage at motor terminals within ±10 % of nameplate. Phases balanced (3ph).' },
-    { id: 'pe4', item: 'Motor running current', criteria: 'Current ≤ FLA under load. Balanced across phases. No excessive inrush.' },
+    { id: 'pe2', item: 'Motor insulation (Megger)', criteria: 'Insulation resistance > 1 Mohm (or OEM min). No signs of overheating or discoloration.' },
+    { id: 'pe3', item: 'Supply voltage', criteria: 'Voltage at motor terminals within +/-10 % of nameplate. Phases balanced (3ph).' },
+    { id: 'pe4', item: 'Motor running current', criteria: 'Current <= FLA under load. Balanced across phases. No excessive inrush.' },
     { id: 'pe5', item: 'Control circuit, pulser, contactors', criteria: 'Contactors clean, no pitting. Control voltage correct. Pulser/encoder clean and functional.' },
     { id: 'pe6', item: 'Emergency Stop', criteria: 'E-Stop clearly visible, accessible, hard-wired, cuts power instantly. Tested and recorded.' },
     { id: 'pe7', item: 'Junction boxes & cable glands', criteria: 'Covers present, not corroded. Intrinsically safe wiring and glands intact and correctly rated.' },
@@ -95,9 +96,9 @@
   const PM_HYDRAULIC = [
     { id: 'ph1', item: 'System pressure / flow performance', criteria: 'Delivery flow rate within OEM/expected range for product and nozzle type. No excessive pressure drop.' },
     { id: 'ph2', item: 'Leak-down / holding integrity', criteria: 'No visible product drop or seepage at joints, seals, meter or pump body under static pressure.' },
-    { id: 'ph5', item: 'Hose dilation check', criteria: 'Dilation error of delivery hose ≤ 50 ml under normal conditions of use.' },
+    { id: 'ph5', item: 'Hose dilation check', criteria: 'Dilation error of delivery hose <= 50 ml under normal conditions of use.' },
     { id: 'ph6', item: 'Seals & adjustable parts', criteria: 'All adjustable parts affecting quantity delivery sealed. Weights & Measures verification seal present and intact.' },
-    { id: 'ph7', item: 'STP pressure (no-flow) & flow at nozzle', criteria: 'No-flow pressure within baseline. Flow at nozzle 5–10 GPM (or OEM) under normal conditions.' },
+    { id: 'ph7', item: 'STP pressure (no-flow) & flow at nozzle', criteria: 'No-flow pressure within baseline. Flow at nozzle 5-10 GPM (or OEM) under normal conditions.' },
     { id: 'ph8', item: 'Bulk transfer pump performance', criteria: 'Flow and pressure meet duty requirements. No cavitation noise. Relief valve operates if fitted. Diaphragm pumps: air pressure correct, no fluid in air exhaust.' }
   ];
 
@@ -127,52 +128,74 @@
 
 
   // ── Meter Accuracy / Calibration State ─────────────────────────────────
+  // Over-registration: Indicated > True Proven (display high; customer short)
+  // Under-registration (deficiency): Indicated < True Proven (display low)
   const calState = {
-    newFdu: [],      // array of reading objects
+    newFdu: [],
     inService: []
   };
 
-  function calcMeterError(dispenserIndicatedL, proverActualL, capacityL, stage) {
-    // proverActualL = true volume measured in the prover can
-    // Error positive (+) = dispenser delivered MORE than indicated → Customer GAINs / Station LOSES
-    // All intermediate and output values forced to exactly 2 decimal places
-    const ind = Number(Number(dispenserIndicatedL).toFixed(2));
-    const act = Number(Number(proverActualL).toFixed(2));
-    const errorL = Number((act - ind).toFixed(4));
-    const errorMl = Number((errorL * 1000).toFixed(2));
-    const errorPct = ind > 0 ? Number(((errorL / ind) * 100).toFixed(2)) : 0;
-    const perLitreMl = ind > 0 ? Number((errorMl / ind).toFixed(2)) : 0;
+  function countyDisplayForVerdict() {
+    const name = ($('#county-name') && $('#county-name').value) ? $('#county-name').value.trim() : '';
+    if (!name) return '________';
+    // First letter of county name and letter C in "County" style emphasis via caps on name
+    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase().replace(/\bc\b/gi, 'C');
+  }
+
+  function calcMeterError(indicatedL, trueProvenL, capacityL, stage) {
+    const ind = Number(Number(indicatedL).toFixed(2));
+    const trueV = Number(Number(trueProvenL).toFixed(2));
+    // Variance (L) = Indicated - True Proven
+    const varianceL = Number((ind - trueV).toFixed(2));
+    // Relative error vs true proven (%)
+    const relVsTrue = trueV > 0 ? Number((((ind - trueV) / trueV) * 100).toFixed(2)) : 0;
+    // Relative indication error vs meter reading (%) - limit basis
+    const relVsInd = ind > 0 ? Number((((ind - trueV) / ind) * 100).toFixed(2)) : 0;
 
     let pass = false;
     let limitText = '';
     if (stage === 'new') {
-      // Kenya Weights & Measures: 0.25% excess only (under-dispense not permitted)
-      limitText = '0.25% excess only (under-dispense not permitted)';
-      pass = errorPct >= 0 && errorPct <= 0.25;
+      // Verification: 0% to +0.25% only; no negative variance permitted
+      limitText = '0% to +0.25% (no negative variance)';
+      pass = varianceL >= 0 && relVsInd >= 0 && relVsInd <= 0.25;
     } else {
-      // In-service: +0.5% excess or −0.25% deficiency
-      limitText = '+0.5% excess or −0.25% deficiency';
-      pass = errorPct >= -0.25 && errorPct <= 0.5;
+      // Re-verification: -0.25% to +0.50%
+      limitText = '-0.25% to +0.50%';
+      pass = relVsInd >= -0.25 && relVsInd <= 0.50;
     }
 
-    let narrative = '';
-    // errorMl > 0 → Actual > Indicated → under-registering (more delivered than shown)
-    // errorMl < 0 → Actual < Indicated → over-registering (less delivered than shown)
-    if (errorMl > 0.50) {
-      narrative = `Under-registering → volume loss to station / gain to customer (${errorMl.toFixed(2)} ml extra delivered)`;
-    } else if (errorMl < -0.50) {
-      narrative = `Over-registering → volume loss to customer / gain to station (${Math.abs(errorMl).toFixed(2)} ml short delivered)`;
+    let regType = 'NEGLIGIBLE';
+    if (varianceL > 0.001) regType = 'OVER-REGISTRATION';
+    else if (varianceL < -0.001) regType = 'UNDER-REGISTRATION';
+
+    const narrative = regType === 'OVER-REGISTRATION'
+      ? 'Over-registration: pump meter reads higher than true proven volume (customer receives less than displayed).'
+      : regType === 'UNDER-REGISTRATION'
+        ? 'Under-registration (deficiency): pump meter reads lower than true proven volume (station delivers more than displayed).'
+        : 'Negligible difference within measurement uncertainty.';
+
+    const county = countyDisplayForVerdict();
+    let verdict = '';
+    if (pass) {
+      verdict = 'VERDICT: Meter PASSES verification. Meter fit for commercial use after authorization and sealing by the '
+        + county + ' Department of Weights and Measures before commencing commercial use.';
     } else {
-      narrative = 'Negligible difference (within measurement uncertainty)';
+      verdict = 'VERDICT: Meter FAILS verification. Meter re-adjustment required. If the meter passes the 2nd verification, authorization and sealing by the '
+        + county + ' Department of Weights and Measures before commencing commercial use.';
     }
 
     return {
-      errorMl: Number(errorMl.toFixed(2)),
-      errorPct: Number(errorPct.toFixed(2)),
-      perLitreMl: Number(perLitreMl.toFixed(2)),
+      varianceL,
+      relVsTrue,
+      relVsInd,
+      errorPct: relVsInd, // alias for legacy PDF code
+      errorMl: Number((varianceL * 1000).toFixed(2)),
+      perLitreMl: ind > 0 ? Number(((varianceL * 1000) / ind).toFixed(2)) : 0,
       pass,
       limitText,
       narrative,
+      regType,
+      verdict,
       status: pass ? 'PASS' : 'FAIL'
     };
   }
@@ -180,29 +203,27 @@
   function renderCalSection(containerId, stage, title, colour) {
     const cont = document.getElementById(containerId);
     if (!cont) return;
-    const readings = stage === 'new' ? calState.newFdu : calState.inService;
     const bg = colour === 'new' ? '#ecfdf5' : '#fff7ed';
     const border = colour === 'new' ? '#059669' : '#d97706';
     const headBg = colour === 'new' ? '#059669' : '#d97706';
+    const typeLabel = stage === 'new' ? 'Verification (New Meters - 1st time testing)' : 'Re-verification (In-service Meters - Retesting)';
 
-    let html = `<div class="cal-block" style="border:2px solid ${border};border-radius:10px;margin-bottom:16px;overflow:hidden;">
+    cont.innerHTML = `<div class="cal-block" style="border:2px solid ${border};border-radius:10px;margin-bottom:16px;overflow:hidden;">
       <div style="background:${headBg};color:#fff;padding:10px 14px;font-weight:700;font-size:0.95rem;">${title}</div>
       <div style="background:${bg};padding:12px;">
-        <p style="font-size:0.8rem;margin-bottom:10px;color:#374151;">
-          ${stage === 'new'
-            ? 'Legal limit (Weights & Measures): <b>0.25 % excess only</b>. Under-dispensing is not permitted on new / never-used / newly repaired FDUs.'
-            : 'Legal limit (Weights & Measures): <b>+0.5 % excess or −0.25 % deficiency</b> for in-service equipment.'}
-        </p>
+        <p style="font-size:0.8rem;margin-bottom:8px;color:#374151;"><b>Meter type:</b> ${typeLabel}</p>
+        <p class="formula-note">Variance (L) = Indicated - True Proven</p>
+        <p class="formula-note">Relative Error vs True (%) = (Indicated - True Proven) / True Proven x 100</p>
+        <p class="formula-note">Relative Indication Error vs Meter (%) = (Indicated - True Proven) / Indicated x 100  [limit basis]</p>
         <div id="${containerId}-rows"></div>
         <button type="button" class="btn btn-outline btn-sm" data-add-cal="${stage}" style="margin-top:8px;">+ Add Reading</button>
         <div id="${containerId}-summary" style="margin-top:12px;font-size:0.85rem;"></div>
       </div>
     </div>`;
-    cont.innerHTML = html;
     renderCalRows(containerId, stage);
     cont.querySelector(`[data-add-cal="${stage}"]`).addEventListener('click', () => {
       const arr = stage === 'new' ? calState.newFdu : calState.inService;
-      arr.push({ capacity: 20, indicated: '', actual: '', flow: '', nozzleId: '' });
+      arr.push({ capacity: 20, indicated: '20.00', actual: '', flow: '', nozzleId: '', meterType: stage === 'new' ? 'verification' : 'reverification' });
       renderCalRows(containerId, stage);
     });
   }
@@ -213,76 +234,84 @@
     if (!rowsCont) return;
     const arr = stage === 'new' ? calState.newFdu : calState.inService;
     if (arr.length === 0) {
-      arr.push({ capacity: 20, indicated: '', actual: '', flow: '', nozzleId: '' });
+      arr.push({ capacity: 20, indicated: '20.00', actual: '', flow: '', nozzleId: '', meterType: stage === 'new' ? 'verification' : 'reverification' });
     }
     let html = '';
     arr.forEach((r, idx) => {
+      if (r.indicated === '' || r.indicated == null) r.indicated = Number(r.capacity || 20).toFixed(2);
       const calc = (r.indicated !== '' && r.actual !== '')
         ? calcMeterError(parseFloat(r.indicated), parseFloat(r.actual), r.capacity, stage)
         : null;
-      html += `<div class="cal-row" data-idx="${idx}" style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-bottom:8px;">
+      html += `<div class="meter-card cal-row" data-idx="${idx}">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
           <strong style="font-size:0.85rem;">Reading #${idx + 1}</strong>
           ${arr.length > 1 ? `<button type="button" class="btn btn-outline btn-sm" data-remove-cal="${stage}" data-idx="${idx}" style="padding:2px 8px;font-size:0.75rem;">Remove</button>` : ''}
         </div>
-        <div class="row" style="margin-bottom:6px;">
-          <div class="form-group" style="margin-bottom:4px;">
-            <label style="font-size:0.7rem;">Nozzle ID <span style="color:#b91c1c;">*</span></label>
-            <input type="text" class="cal-nozzle" data-stage="${stage}" data-idx="${idx}" value="${r.nozzleId || ''}" placeholder="e.g. Nozzle-1 / Hose-A / Side-L" />
-          </div>
-          <div class="form-group" style="margin-bottom:4px;">
-            <label style="font-size:0.7rem;">Prover Can Capacity</label>
-            <select class="cal-capacity" data-stage="${stage}" data-idx="${idx}">
-              <option value="5" ${r.capacity == 5 ? 'selected' : ''}>5.00 L</option>
-              <option value="10" ${r.capacity == 10 ? 'selected' : ''}>10.00 L</option>
-              <option value="20" ${r.capacity == 20 ? 'selected' : ''}>20.00 L</option>
-            </select>
+        <div class="form-group" style="margin-bottom:6px;">
+          <label style="font-size:0.7rem;">Nozzle / Hose ID</label>
+          <input type="text" class="cal-nozzle auto-caps" data-stage="${stage}" data-idx="${idx}" value="${r.nozzleId || ''}" placeholder="e.g. PMS-II" />
+        </div>
+        <div class="form-group" style="margin-bottom:6px;">
+          <label style="font-size:0.7rem;">Prover Can Size (L) - select one</label>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            ${[5,10,20].map(v => `<label class="check-item" style="padding:4px 8px;"><input type="radio" name="cal-cap-${stage}-${idx}" class="cal-capacity-radio" data-stage="${stage}" data-idx="${idx}" value="${v}" ${Number(r.capacity)===v?'checked':''}> ${v}.00 L</label>`).join('')}
           </div>
         </div>
-        <div class="row" style="margin-bottom:6px;">
+        <div class="row">
           <div class="form-group" style="margin-bottom:4px;">
-            <label style="font-size:0.7rem;">Approx. Flow Rate (L/min)</label>
-            <input type="text" inputmode="decimal" class="cal-flow" data-stage="${stage}" data-idx="${idx}" value="${r.flow || ''}" placeholder="e.g. 35.00" />
+            <label style="font-size:0.7rem;">Indicated Pump Meter Reading (L)</label>
+            <input type="text" inputmode="decimal" class="cal-indicated" data-stage="${stage}" data-idx="${idx}" value="${r.indicated}" readonly style="background:#f3f4f6;" />
+            <div class="help">Auto-filled to match prover can size</div>
           </div>
           <div class="form-group" style="margin-bottom:4px;">
-            <label style="font-size:0.7rem;">Dispenser Indicated Volume (L)</label>
-            <input type="text" inputmode="decimal" class="cal-indicated" data-stage="${stage}" data-idx="${idx}" value="${r.indicated}" placeholder="e.g. 20.00" />
+            <label style="font-size:0.7rem;">True Proven Volume Reading (L)</label>
+            <input type="text" inputmode="decimal" class="cal-actual" data-stage="${stage}" data-idx="${idx}" value="${r.actual}" placeholder="e.g. 19.95" />
           </div>
         </div>
-        <div class="form-group" style="margin-bottom:4px;">
-          <label style="font-size:0.7rem;">Prover Can Actual Reading (L)</label>
-          <input type="text" inputmode="decimal" class="cal-actual" data-stage="${stage}" data-idx="${idx}" value="${r.actual}" placeholder="True volume in the can e.g. 20.05" />
+        <div class="sig-file-row">
+          <label class="btn btn-outline btn-sm" style="cursor:pointer;">📷 Photo of reading
+            <input type="file" class="cal-photo" data-stage="${stage}" data-idx="${idx}" accept="image/*" hidden />
+          </label>
+          <span style="font-size:0.75rem;color:#6b7280;">Saved to Photographic Evidence</span>
         </div>`;
       if (calc) {
-        const statusColour = calc.pass ? '#059669' : '#dc2626';
-        const signMl = calc.errorMl > 0 ? '+' : '';
-        const signPct = calc.errorPct > 0 ? '+' : '';
-        const signPer = calc.perLitreMl > 0 ? '+' : '';
-        html += `<div style="background:#f8fafc;border-left:4px solid ${statusColour};padding:8px 10px;border-radius:4px;font-size:0.8rem;">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">
-            <div><b>Nozzle ID:</b> ${r.nozzleId || '—'}</div>
-            <div><b>Prover Tank Size:</b> ${Number(r.capacity).toFixed(2)} L</div>
-            <div><b>Approx. Flow Rate:</b> ${r.flow ? Number(r.flow).toFixed(2) + ' L/min' : '—'}</div>
-            <div><b>Dispenser Indicated:</b> ${Number(r.indicated).toFixed(2)} L</div>
-            <div><b>Prover Actual:</b> ${Number(r.actual).toFixed(2)} L</div>
-          </div>
-          <div style="margin-top:6px;padding-top:6px;border-top:1px solid #e2e8f0;">
-            <b>Over/Under:</b> ${signMl}${calc.errorMl.toFixed(2)} ml &nbsp;|&nbsp;
-            <b>%</b> ${signPct}${calc.errorPct.toFixed(2)}% &nbsp;|&nbsp;
-            <b>Per Litre:</b> ${signPer}${calc.perLitreMl.toFixed(2)} ml/L
-          </div>
-          <div style="margin-top:4px;"><b>Status:</b> <span style="color:${statusColour};font-weight:700;">${calc.status}</span> against ${calc.limitText}</div>
-          <div style="margin-top:4px;color:#4b5563;font-weight:500;">${calc.narrative}</div>
-        </div>`;
+        const statusColour = calc.pass ? '#1a7346' : '#b91c1c';
+        html += `<div style="margin-top:8px;font-size:0.82rem;">
+          <div><b>Variance (L):</b> ${calc.varianceL >= 0 ? '+' : ''}${calc.varianceL.toFixed(2)} &nbsp; (${calc.regType})</div>
+          <div class="formula-note">Variance = Indicated - True Proven</div>
+          <div><b>Relative Error vs True (%):</b> ${calc.relVsTrue >= 0 ? '+' : ''}${calc.relVsTrue.toFixed(2)}%</div>
+          <div class="formula-note">(Indicated - True) / True x 100</div>
+          <div><b>Relative Indication Error vs Meter (%):</b> ${calc.relVsInd >= 0 ? '+' : ''}${calc.relVsInd.toFixed(2)}%</div>
+          <div class="formula-note">(Indicated - True) / Indicated x 100 &nbsp;|&nbsp; Limit: ${calc.limitText}</div>
+          <div style="margin-top:4px;"><b>Status:</b> <span style="color:${statusColour};font-weight:700;font-family:Arial,sans-serif;font-size:12pt;">${calc.status}</span></div>
+          <div style="margin-top:4px;color:#4b5563;">${calc.narrative}</div>
+        </div>
+        <div class="verdict-box"><span class="${calc.pass ? 'pass' : 'fail'}">${calc.pass ? 'PASS' : 'FAIL'}</span> - ${calc.verdict.replace(/^VERDICT:\s*Meter (PASSES|FAILS) verification\.\s*/, '')}</div>`;
       }
       html += `</div>`;
     });
     rowsCont.innerHTML = html;
 
-    // Bind events
-    rowsCont.querySelectorAll('.cal-capacity, .cal-indicated, .cal-actual, .cal-flow, .cal-nozzle').forEach(el => {
+    rowsCont.querySelectorAll('.cal-capacity-radio').forEach(el => {
+      el.addEventListener('change', () => {
+        const stage = el.dataset.stage;
+        const idx = parseInt(el.dataset.idx, 10);
+        const arr = stage === 'new' ? calState.newFdu : calState.inService;
+        if (!arr[idx]) return;
+        arr[idx].capacity = parseInt(el.value, 10);
+        arr[idx].indicated = Number(arr[idx].capacity).toFixed(2);
+        renderCalRows(containerId, stage);
+      });
+    });
+    rowsCont.querySelectorAll('.cal-actual, .cal-nozzle').forEach(el => {
       el.addEventListener('input', () => updateCalReading(el));
       el.addEventListener('change', () => updateCalReading(el));
+    });
+    rowsCont.querySelectorAll('.cal-photo').forEach(inp => {
+      inp.addEventListener('change', (e) => {
+        const files = e.target.files;
+        if (files && files.length) addPhotos(files);
+      });
     });
     rowsCont.querySelectorAll('[data-remove-cal]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -294,27 +323,17 @@
       });
     });
 
-    // Summary
     if (summaryCont) {
       const valid = arr.filter(r => r.indicated !== '' && r.actual !== '').map(r =>
         calcMeterError(parseFloat(r.indicated), parseFloat(r.actual), r.capacity, stage)
       );
-      if (valid.length >= 2) {
-        const pcts = valid.map(v => v.errorPct);
-        const max = Math.max(...pcts);
-        const min = Math.min(...pcts);
-        const spread = max - min;
-        const allPass = valid.every(v => v.pass);
+      if (valid.length >= 1) {
+        const fails = valid.filter(v => !v.pass).length;
         summaryCont.innerHTML = `<div style="background:#f1f5f9;padding:8px 10px;border-radius:6px;">
-          <b>Repeatability summary (${valid.length} readings):</b><br>
-          Error range: ${min.toFixed(2)}% to ${max.toFixed(2)}% (spread ${spread.toFixed(2)}%)<br>
-          Overall: <span style="font-weight:700;color:${allPass ? '#059669' : '#dc2626'}">${allPass ? 'ALL WITHIN LIMITS' : 'ONE OR MORE OUTSIDE LIMITS'}</span>
+          <b>${valid.length} reading(s):</b> ${valid.length - fails} PASS, ${fails} FAIL
+          ${fails ? ' - FAIL readings will appear in the Non-Conformance log.' : ''}
         </div>`;
-      } else {
-        summaryCont.innerHTML = valid.length === 1
-          ? '<span style="color:#6b7280;">Add more readings to assess repeatability / drift.</span>'
-          : '';
-      }
+      } else summaryCont.innerHTML = '';
     }
   }
 
@@ -323,11 +342,9 @@
     const idx = parseInt(el.dataset.idx, 10);
     const arr = stage === 'new' ? calState.newFdu : calState.inService;
     if (!arr[idx]) return;
-    if (el.classList.contains('cal-capacity')) arr[idx].capacity = parseInt(el.value, 10);
-    if (el.classList.contains('cal-indicated')) arr[idx].indicated = el.value;
     if (el.classList.contains('cal-actual')) arr[idx].actual = el.value;
+    if (el.classList.contains('cal-nozzle')) arr[idx].nozzleId = el.value.toUpperCase();
     if (el.classList.contains('cal-flow')) arr[idx].flow = el.value;
-    if (el.classList.contains('cal-nozzle')) arr[idx].nozzleId = el.value;
     const containerId = stage === 'new' ? 'cal-new-container' : 'cal-inservice-container';
     renderCalRows(containerId, stage);
   }
@@ -357,7 +374,7 @@
     $('#overlay').classList.remove('show');
   }
 
-  // ── County register (hierarchical order, name → 3-digit code) ─────────
+  // ── County register (hierarchical order, name -> 3-digit code) ─────────
   // Saved for future reference / reuse
   const COUNTY_REGISTER = [
     { name: 'MOMBASA', code: '001' },
@@ -415,7 +432,7 @@
   } catch (_) {}
 
   function formatDateDDMonYYYY(isoOrDate) {
-    if (!isoOrDate) return '—';
+    if (!isoOrDate) return '-';
     let d;
     if (typeof isoOrDate === 'string' && /^\d{4}-\d{2}-\d{2}/.test(isoOrDate)) {
       d = new Date(isoOrDate + 'T00:00:00');
@@ -424,7 +441,7 @@
     } else {
       d = new Date(isoOrDate);
     }
-    if (isNaN(d.getTime())) return '—';
+    if (isNaN(d.getTime())) return '-';
     const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
     return String(d.getDate()).padStart(2, '0') + '-' + months[d.getMonth()] + '-' + d.getFullYear();
   }
@@ -463,7 +480,7 @@
       });
     }
 
-    // Populate Year of Installation dropdown (1990 → current year + 1)
+    // Populate Year of Installation dropdown (1990 -> current year + 1)
     const yearSel = $('#lift-year');
     if (yearSel && yearSel.options.length <= 1) {
       const currentYear = new Date().getFullYear();
@@ -537,7 +554,7 @@
       });
     });
 
-    // Auto-capitalise text inputs/textareas only (never <select> — uppercasing
+    // Auto-capitalise text inputs/textareas only (never <select> - uppercasing
     // the value would break option matching and blank the displayed selection)
     $$('.auto-caps').forEach(el => {
       if (el.tagName === 'SELECT') return;
@@ -582,7 +599,7 @@
       }
     }
 
-    // Validity Period → enable/disable Valid Until date
+    // Validity Period -> enable/disable Valid Until date
     const validitySel = $('#warranty-validity');
     const validUntil = $('#valid-until');
     const validUntilHint = $('#valid-until-hint');
@@ -635,7 +652,7 @@
   // ── Render checklist sections ──────────────────────────────────────────
   function resultSelect(id, defaultVal = '') {
     return `<select class="result-sel" data-id="${id}">
-      <option value="">—</option>
+      <option value="">-</option>
       <option value="C" ${defaultVal === 'C' ? 'selected' : ''}>C</option>
       <option value="NC" ${defaultVal === 'NC' ? 'selected' : ''}>NC</option>
       <option value="N/A" ${defaultVal === 'N/A' ? 'selected' : ''}>N/A</option>
@@ -650,7 +667,7 @@
       html += `<div class="check-row" data-id="${it.id}">
         <div>
           <strong>${it.item || it.step}</strong>
-          <div class="criteria">${it.criteria || it.hazard + ' → ' + it.control}</div>
+          <div class="criteria">${it.criteria || it.hazard + ' -> ' + it.control}</div>
           <input type="text" class="remarks-input" data-remarks="${it.id}" placeholder="Remarks / measured value" />
         </div>
         <div>${resultSelect(it.id)}</div>
@@ -671,7 +688,7 @@
         </div>
         <div>
           <select class="result-sel" data-id="${it.id}">
-            <option value="">—</option>
+            <option value="">-</option>
             <option value="YES">YES</option>
             <option value="NO">NO</option>
             <option value="N/A">N/A</option>
@@ -694,7 +711,7 @@
         </div>
         <div>
           <select class="result-sel" data-id="${it.id}">
-            <option value="">—</option>
+            <option value="">-</option>
             <option value="Available">Available</option>
             <option value="Missing">Missing</option>
           </select>
@@ -734,29 +751,48 @@
     renderCheckList('#pm-hyd', PM_HYDRAULIC, 'D. Hydraulic / Flow Performance (excl. Meter Accuracy)');
     // Dedicated Meter Accuracy modules with live calculation
     renderCalSection('cal-new-container', 'new',
-      '1. METER ACCURACY – New & Never Used Before FDU  (Verification / Commissioning)', 'new');
+      '1. METER ACCURACY - New & Never Used Before FDU  (Verification / Commissioning)', 'new');
     renderCalSection('cal-inservice-container', 'inService',
-      '2. METER ACCURACY – In-Service FDU  (Routine Inspection)', 'inService');
+      '2. METER ACCURACY - In-Service FDU  (Routine Inspection)', 'inService');
   }
 
   // ── Non-conformance auto-collect ───────────────────────────────────────
   function collectNCs() {
     const ncs = [];
-    // From all result selects that are NC or Missing
     $$('.result-sel').forEach(sel => {
       const val = sel.value;
-      if (val === 'NC' || val === 'Missing') {
+      if (val === 'NC' || val === 'Missing' || val === 'NO') {
         const row = sel.closest('.check-row');
         const title = row ? (row.querySelector('strong')?.textContent || sel.dataset.id) : sel.dataset.id;
         const remarks = row?.querySelector('.remarks-input')?.value || '';
         ncs.push({
           id: sel.dataset.id,
-          desc: title + (remarks ? ' – ' + remarks : ''),
+          desc: title + (remarks ? ' - ' + remarks : ''),
           urgency: val === 'Missing' && sel.dataset.id === 'rg1' ? 'Critical' : 'High',
           wo: false,
           target: ''
         });
       }
+    });
+    // Meter accuracy FAILs
+    ['newFdu', 'inService'].forEach(key => {
+      const stage = key === 'newFdu' ? 'new' : 'inService';
+      (calState[key] || []).forEach((r, i) => {
+        if (r.indicated === '' || r.actual === '') return;
+        const c = calcMeterError(parseFloat(r.indicated), parseFloat(r.actual), r.capacity, stage);
+        if (!c.pass) {
+          ncs.push({
+            id: 'meter-' + key + '-' + i,
+            desc: 'Meter accuracy FAIL [' + (stage === 'new' ? 'Verification' : 'Re-verification') + '] Nozzle '
+              + (r.nozzleId || ('#' + (i + 1))) + ' - Relative indication error '
+              + (c.relVsInd >= 0 ? '+' : '') + c.relVsInd.toFixed(2) + '% (limit ' + c.limitText + '); '
+              + c.regType + ' variance ' + (c.varianceL >= 0 ? '+' : '') + c.varianceL.toFixed(2) + ' L',
+            urgency: 'Critical',
+            wo: true,
+            target: ''
+          });
+        }
+      });
     });
     return ncs;
   }
@@ -790,7 +826,7 @@
       </tr>`;
     });
     html += '</tbody></table>';
-    html += '<p class="help" style="margin-top:6px;"><b>Urgency:</b> Critical = stop use immediately · High = 24–48 hrs · Medium = within 7 days · Low = next PM cycle</p>';
+    html += '<p class="help" style="margin-top:6px;"><b>Urgency:</b> Critical = stop use immediately · High = 24-48 hrs · Medium = within 7 days · Low = next PM cycle</p>';
     cont.innerHTML = html;
   }
 
@@ -811,15 +847,15 @@
     $('#progress-fill').style.width = pct + '%';
 
     $('#btn-prev').disabled = idx <= 0;
-    $('#btn-next').textContent = idx >= state.activeSteps.length - 1 ? 'Review' : 'Next →';
+    $('#btn-next').textContent = idx >= state.activeSteps.length - 1 ? 'Review' : 'Next ->';
 
-    // Special renders
-    if (n === 1) renderJHA();
-    if (n === 2) renderCheckList('#preinstall-container', PREINSTALL_ITEMS);
-    if (n === 3) renderCheckList('#install-container', INSTALL_ITEMS);
-    if (n === 4) renderPM();
-    if (n === 5) renderReg();
-    if (n === 6) renderTraining();
+    // Special renders - only build once so Back/Next does not wipe entered data
+    if (n === 1 && (!$('#jha-container') || !$('#jha-container').children.length)) renderJHA();
+    if (n === 2 && (!$('#preinstall-container') || !$('#preinstall-container').children.length)) renderCheckList('#preinstall-container', PREINSTALL_ITEMS);
+    if (n === 3 && (!$('#install-container') || !$('#install-container').children.length)) renderCheckList('#install-container', INSTALL_ITEMS);
+    if (n === 4 && (!$('#pm-container') || !$('#pm-container').children.length)) renderPM();
+    if (n === 5 && (!$('#reg-container') || !$('#reg-container').children.length)) renderReg();
+    if (n === 6 && (!$('#training-topics') || !$('#training-topics').children.length)) renderTraining();
     if (n === 7) {
       const ncs = collectNCs();
       renderNCLog(ncs);
@@ -829,6 +865,7 @@
       if (!$('#sig-tech-name').value) $('#sig-tech-name').value = $('#tech-lead').value || '';
       if (!$('#sig-tech-date').value) $('#sig-tech-date').value = todayISO();
       if (!$('#sig-client-date').value) $('#sig-client-date').value = todayISO();
+      initSigFileInputs();
     }
     if (n === 10) buildReview();
 
@@ -934,9 +971,9 @@
       const div = document.createElement('div');
       div.className = 'photo-thumb';
       if (p.dataUrl.startsWith('data:image')) {
-        div.innerHTML = `<img src="${p.dataUrl}" alt="${p.name}" /><button class="remove" data-id="${p.id}">×</button>`;
+        div.innerHTML = `<img src="${p.dataUrl}" alt="${p.name}" /><button class="remove" data-id="${p.id}">x</button>`;
       } else {
-        div.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:0.7rem;padding:4px;text-align:center;">${p.name}</div><button class="remove" data-id="${p.id}">×</button>`;
+        div.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:0.7rem;padding:4px;text-align:center;">${p.name}</div><button class="remove" data-id="${p.id}">x</button>`;
       }
       grid.appendChild(div);
     });
@@ -972,6 +1009,40 @@
     if (sigPads[id]) sigPads[id].clear();
   }
 
+
+  function initSigFileInputs() {
+    function bind(inputId, previewId, key) {
+      const inp = document.getElementById(inputId);
+      const prev = document.getElementById(previewId);
+      if (!inp || inp.dataset.bound) return;
+      inp.dataset.bound = '1';
+      inp.addEventListener('change', () => {
+        const f = inp.files && inp.files[0];
+        if (!f) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          state.sigFiles[key] = e.target.result;
+          if (prev) {
+            prev.src = e.target.result;
+            prev.style.display = 'block';
+          }
+          // Clear pad when file chosen so embed uses file
+          if (sigPads['sig-' + (key === 'tech' ? 'tech' : 'client')]) {
+            try { sigPads['sig-' + (key === 'tech' ? 'tech' : 'client')].clear(); } catch (_) {}
+          }
+        };
+        reader.readAsDataURL(f);
+      });
+    }
+    bind('sig-tech-file', 'sig-tech-file-preview', 'tech');
+    bind('sig-client-file', 'sig-client-file-preview', 'client');
+  }
+
+  function resolveSigImage(padId, fileKey) {
+    if (state.sigFiles[fileKey]) return state.sigFiles[fileKey];
+    return getSigDataSafe(padId);
+  }
+
   function getSigDataSafe(id) {
     const pad = sigPads[id];
     if (!pad || pad.isEmpty()) return null;
@@ -997,13 +1068,13 @@
       '1': 'Pre-Installation', '2': 'Post-Installation', '3': 'Baseline Condition',
       '4': 'Routine PM', '5': 'Regulatory Compliance'
     };
-    const svcText = state.serviceTypes.map(s => serviceLabels[s] || s).join(', ') || '—';
+    const svcText = state.serviceTypes.map(s => serviceLabels[s] || s).join(', ') || '-';
     let html = `
       <div class="review-section" style="border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;">
         <h4 style="background:#f3f4f6;padding:8px 12px;font-size:0.85rem;">Document & Equipment</h4>
         <div style="padding:10px 12px;font-size:0.85rem;">
           <b>${$('#doc-number').value}</b> · ${$('#client-name').value} · ${$('#site-name').value}<br>
-          Equipment: ${state.equipType} · Asset ID: ${$('#lift-id').value} · Brand: ${$('#equipment-brand').value || '—'}<br>
+          Equipment: ${state.equipType} · Asset ID: ${$('#lift-id').value} · Brand: ${$('#equipment-brand').value || '-'}<br>
           Service: ${svcText} · Tech: ${$('#tech-lead').value}
         </div>
       </div>
@@ -1022,7 +1093,20 @@
   }
 
   // ── PDF Generation (Professional layout matching FSW Workbook design) ──
+
+  function checklistStatusesIncomplete() {
+    const sels = Array.from(document.querySelectorAll('.result-sel'));
+    if (!sels.length) return false;
+    // Only flag if user has opened PM/JHA and left blanks while service types require them
+    const empty = sels.filter(s => !s.value);
+    return empty.length > 0 && empty.length === sels.length; // all empty = incomplete if any checklist shown
+  }
+
   async function generatePDF() {
+    if (checklistStatusesIncomplete()) {
+      const go = confirm('Checklist status fields appear empty. Generate PDF anyway?');
+      if (!go) return;
+    }
     showOverlay('Generating PDF…');
     try {
       const { jsPDF } = window.jspdf;
@@ -1069,7 +1153,7 @@
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(5.5);
         doc.setTextColor(...grey);
-        doc.text('CONFIDENTIAL – FSW Use Only', pageW / 2, fy, { align: 'center' });
+        doc.text('CONFIDENTIAL - FSW Use Only', pageW / 2, fy, { align: 'center' });
         // Brand line below the outer boundary
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(5);
@@ -1083,6 +1167,21 @@
           drawPageFrame();
           y = 18;
         }
+      }
+
+
+      function drawRubberStamp(x, y) {
+        // 58mm x 22mm box at ~15% opacity
+        const w = 58, h = 22;
+        doc.setDrawColor(100, 100, 100);
+        doc.setLineWidth(0.4);
+        doc.setFillColor(230, 230, 230);
+        doc.rect(x, y, w, h, 'FD');
+        doc.setTextColor(180, 180, 180);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text('RUBBERSTAMP HERE', x + w / 2, y + h / 2 + 1.5, { align: 'center' });
+        doc.setTextColor(0, 0, 0);
       }
 
       function sectionBar(title) {
@@ -1100,7 +1199,7 @@
       function bodyLine(txt, size, bold) {
         doc.setFont('helvetica', bold ? 'bold' : 'normal');
         doc.setFontSize(size || 8);
-        const lines = doc.splitTextToSize(String(txt || '—'), usable);
+        const lines = doc.splitTextToSize(String(txt || '-'), usable);
         checkPage(lines.length * 3.8 + 2);
         doc.text(lines, margin, y);
         y += lines.length * 3.8 + 1.5;
@@ -1117,7 +1216,7 @@
           const kw = doc.getTextWidth(k);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(...dark);
-          doc.text(String(p.v || '—'), x + kw, y);
+          doc.text(String(p.v || '-'), x + kw, y);
           x += usable / pairs.length;
         });
         y += 5;
@@ -1131,7 +1230,7 @@
         if (val === 'Missing') return { text: 'Missing', colour: red };
         if (val === 'YES') return { text: 'YES', colour: green };
         if (val === 'NO') return { text: 'NO', colour: red };
-        return { text: val || '—', colour: dark };
+        return { text: val || '-', colour: dark };
       }
 
       // 4-column inspection table (Item | Criteria | Status | Remarks)
@@ -1162,12 +1261,12 @@
           const val = sel ? sel.value : '';
           const rem = remarksEl ? remarksEl.value : '';
           const itemTxt = it.item || it.step || it.id;
-          const critTxt = it.criteria || ((it.hazard || '') + ' → ' + (it.control || ''));
+          const critTxt = it.criteria || ((it.hazard || '') + ' -> ' + (it.control || ''));
           const st = statusFull(val);
 
           const itemLines = doc.splitTextToSize(itemTxt, colW[0] - 2);
           const critLines = doc.splitTextToSize(critTxt, colW[1] - 2);
-          const remLines = doc.splitTextToSize(rem || '—', colW[3] - 2);
+          const remLines = doc.splitTextToSize(rem || '-', colW[3] - 2);
           const maxLines = Math.max(itemLines.length, critLines.length, remLines.length, 1);
           const rowH = maxLines * 3.4 + 2.5;
 
@@ -1240,8 +1339,8 @@
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(7.5);
       doc.setTextColor(...dark);
-      doc.text('Checklist No: INSP/FDU&Pumps/ControlledDoc/Vol-01', margin + 3, y + 5.2);
-      doc.text('Linked WO#  ' + ($('#linked-wo').value || '—'), margin + usable * 0.62, y + 5.2);
+      doc.text('Controlled Doc No: INSP/FDU&Pumps/ControlledDoc/Vol-01', margin + 3, y + 5.2);
+      doc.text('Linked WO#  ' + ($('#linked-wo').value || '-'), margin + usable * 0.62, y + 5.2);
       y += 11;
 
       // 1. GENERAL INFORMATION
@@ -1253,35 +1352,35 @@
       ]);
       kvLine([
         { k: 'Client Name', v: $('#client-name').value },
-        { k: 'County', v: ($('#county-name').value || '—') + ($('#county-code').value ? ' (' + $('#county-code').value + ')' : '') }
+        { k: 'County', v: ($('#county-name').value || '-') + ($('#county-code').value ? ' (' + $('#county-code').value + ')' : '') }
       ]);
       kvLine([
         { k: 'Site Location', v: $('#site-name').value },
-        { k: 'Site Rep Name & Contact', v: $('#site-contact').value || '—' }
+        { k: 'Site Rep Name & Contact', v: $('#site-contact').value || '-' }
       ]);
       kvLine([
-        { k: 'Equipment Type', v: state.equipType || '—' },
+        { k: 'Equipment Type', v: state.equipType || '-' },
         { k: 'Unique Asset ID', v: $('#lift-id').value }
       ]);
       kvLine([
-        { k: 'Product/Hose Config', v: $('#fdu-config').value || '—' },
-        { k: 'Equipment Brand', v: $('#equipment-brand').value || '—' }
+        { k: 'Product/Hose Config', v: $('#fdu-config').value || '-' },
+        { k: 'Equipment Brand', v: $('#equipment-brand').value || '-' }
       ]);
       kvLine([
-        { k: 'Model No.', v: $('#equipment-model').value || '—' },
-        { k: 'Serial No.', v: $('#equipment-serial').value || '—' }
+        { k: 'Model No.', v: $('#equipment-model').value || '-' },
+        { k: 'Serial No.', v: $('#equipment-serial').value || '-' }
       ]);
       kvLine([
-        { k: 'Year of Installation', v: $('#lift-year').value || '—' },
-        { k: 'Validity Period', v: $('#warranty-validity').value || '—' }
+        { k: 'Year of Installation', v: $('#lift-year').value || '-' },
+        { k: 'Validity Period', v: $('#warranty-validity').value || '-' }
       ]);
       kvLine([
         { k: 'Valid Until', v: formatDateDDMonYYYY($('#valid-until') ? $('#valid-until').value : '') },
-        { k: 'Vendor Name', v: $('#vendor-name').value || '—' }
+        { k: 'Vendor Name', v: $('#vendor-name').value || '-' }
       ]);
       kvLine([
-        { k: 'Vendor Location', v: $('#vendor-location') ? ($('#vendor-location').value || '—') : '—' },
-        { k: 'Vendor Contacts', v: $('#vendor-contacts') ? ($('#vendor-contacts').value || '—') : '—' }
+        { k: 'Vendor Location', v: $('#vendor-location') ? ($('#vendor-location').value || '-') : '-' },
+        { k: 'Vendor Contacts', v: $('#vendor-contacts') ? ($('#vendor-contacts').value || '-') : '-' }
       ]);
       const serviceLabels = {
         '1': '1. PRE INSTALLATION INSPECTIONS',
@@ -1290,7 +1389,7 @@
         '4': '4. ROUTINE PREVENTIVE MAINTENANCE INSPECTION',
         '5': '5. REGULATORY COMPLIANCE AUDITING'
       };
-      const svcText = state.serviceTypes.map(s => serviceLabels[s] || s).join('; ') || '—';
+      const svcText = state.serviceTypes.map(s => serviceLabels[s] || s).join('; ') || '-';
       kvLine([
         { k: 'Technician-In-Charge', v: $('#tech-lead').value },
         { k: 'Service Type(s)', v: svcText }
@@ -1299,7 +1398,7 @@
 
       // 2. JHA
       sectionBar('2. JOB SAFETY & HAZARD ANALYSIS');
-      bodyLine('JHA Sign-off- This is your acceptance to apply and follow ALL the safety controls for this job : ' + ($('#jha-sign-name').value || '—'), 8, false);
+      bodyLine('JHA Sign-off- This is your acceptance to apply and follow ALL the safety controls for this job : ' + ($('#jha-sign-name').value || '-'), 8, false);
       // JHA uses different selects; dump as table-like
       const jhaItems = JHA_ITEMS.map(it => ({
         id: it.id,
@@ -1309,13 +1408,13 @@
       // mini header already done by sectionBar; reuse dump logic lightly
       jhaItems.forEach(it => {
         const sel = document.querySelector('.result-sel[data-id="' + it.id + '"]');
-        const val = sel ? sel.value : '—';
+        const val = sel ? sel.value : '-';
         const st = statusFull(val);
         checkPage(8);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...dark);
-        const lines = doc.splitTextToSize(it.item + ' — ' + it.criteria, usable * 0.72);
+        const lines = doc.splitTextToSize(it.item + ' - ' + it.criteria, usable * 0.72);
         doc.text(lines, margin, y);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...st.colour);
@@ -1356,9 +1455,9 @@
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(7);
             doc.setTextColor(...dark);
-            const hdr = 'Nozzle ID: ' + (r.nozzleId || '—') +
+            const hdr = 'Nozzle ID: ' + (r.nozzleId || '-') +
               '   |   Prover Tank Size: ' + Number(r.capacity).toFixed(2) + ' L' +
-              '   |   Approximate Flow Rate: ' + (r.flow ? Number(r.flow).toFixed(2) + ' L/min' : '—');
+              '   |   Approximate Flow Rate: ' + (r.flow ? Number(r.flow).toFixed(2) + ' L/min' : '-');
             const hdrLines = doc.splitTextToSize(hdr, usable);
             doc.text(hdrLines, margin, y);
             y += hdrLines.length * 3.5 + 2;
@@ -1382,7 +1481,7 @@
             });
             y += rowH;
 
-            // Data row – light grid (~15% opacity feel)
+            // Data row - light grid (~15% opacity feel)
             checkPage(rowH + 2);
             doc.setDrawColor(200, 210, 220);
             doc.setLineWidth(0.12);
@@ -1435,7 +1534,7 @@
             y += analysisLines.length * 3.6 + 4;
           });
 
-          // Repeatability Summary (when ≥2 valid readings)
+          // Repeatability Summary (when >=2 valid readings)
           if (valid.length >= 2) {
             const calcs = valid.map(r => calcMeterError(parseFloat(r.indicated), parseFloat(r.actual), r.capacity, stage));
             const pcts = calcs.map(v => v.errorPct);
@@ -1444,8 +1543,8 @@
             const spread = maxPct - minPct;
             const allPass = calcs.every(v => v.pass);
             const interpretation = allPass
-              ? 'ALL WITHIN LIMITS – acceptable repeatability'
-              : 'ONE OR MORE OUTSIDE LIMITS – investigate drift / meter condition';
+              ? 'ALL WITHIN LIMITS - acceptable repeatability'
+              : 'ONE OR MORE OUTSIDE LIMITS - investigate drift / meter condition';
 
             sectionBar('Repeatability Summary');
             const rColW = [usable * 0.22, usable * 0.22, usable * 0.22, usable * 0.34];
@@ -1498,11 +1597,11 @@
         }
 
         dumpMeterAccuracy('new',
-          '5E. METER ACCURACY – New & Never Used Before FDU',
-          'Legal limit (Weights & Measures): 0.25% excess only (under-dispense not permitted). All values shown to 2 decimal places.');
+          '5E. METER ACCURACY - New & Never Used Before FDU',
+          'Legal limit (Verification/new): relative indication error 0% to +0.25% (no negative). Values to 2 decimal places.');
         dumpMeterAccuracy('inService',
-          '5F. METER ACCURACY – In-Service FDU',
-          'Legal limit (Weights & Measures): +0.5% excess or −0.25% deficiency. All values shown to 2 decimal places.');
+          '5F. METER ACCURACY - In-Service FDU',
+          'Legal limit (Re-verification): relative indication error -0.25% to +0.50%. Values to 2 decimal places.');
       }
       if (state.serviceTypes.includes('5')) dumpTableSection('6. REGULATORY COMPLIANCE AUDITING (incl. Training)', REG_ITEMS);
 
@@ -1520,29 +1619,48 @@
 
       // Notes
       sectionBar('8. TECHNICIAN CLOSING NOTES & RECOMMENDATIONS');
-      bodyLine($('#tech-notes').value || '—', 8, false);
+      const notesVal = ($('#tech-notes') && $('#tech-notes').value) ? $('#tech-notes').value.trim() : '';
+      bodyLine(notesVal || 'No closing notes recorded.', 8, false);
       y += 3;
 
       // Sign-off
       sectionBar('9. SIGN-OFF');
       bodyLine('TECHNICIAN DECLARATION', 8, true);
       bodyLine($('#tech-declaration').value || '', 7, false);
-      bodyLine('Name: ' + ($('#sig-tech-name').value || '—') + '     Date: ' + formatDateDDMonYYYY($('#sig-tech-date') ? $('#sig-tech-date').value : ''), 8, false);
-      const techSig = getSigDataSafe('sig-tech');
+      checkPage(40);
+      const techNameLine = 'Name: ' + ($('#sig-tech-name').value || '-') + '     Date: ' + formatDateDDMonYYYY($('#sig-tech-date') ? $('#sig-tech-date').value : '');
+      bodyLine(techNameLine, 8, false);
+      const techSig = resolveSigImage('sig-tech', 'tech');
       if (techSig) {
-        checkPage(30);
-        try { doc.addImage(techSig, 'JPEG', margin, y, 50, 20); y += 24; } catch (_) {}
+        checkPage(32);
+        try { doc.addImage(techSig, 'JPEG', margin, y, 50, 20); } catch (e) {
+          try { doc.addImage(techSig, 'PNG', margin, y, 50, 20); } catch (_) {}
+        }
+        drawRubberStamp(pageW - margin - 58, y);
+        y += 26;
+      } else {
+        checkPage(28);
+        drawRubberStamp(pageW - margin - 58, y);
+        y += 26;
       }
-      y += 2;
+      y += 10; // extra space before client section
       bodyLine('CLIENT / SITE REPRESENTATIVE CONFIRMATION', 8, true);
       bodyLine($('#client-declaration').value || '', 7, false);
-      bodyLine('Name: ' + ($('#client-rep-name').value || '—') + '     Title: ' + ($('#client-rep-title').value || '—') + '     Date: ' + formatDateDDMonYYYY($('#sig-client-date') ? $('#sig-client-date').value : ''), 8, false);
-      const clientSig = getSigDataSafe('sig-client');
+      bodyLine('Name: ' + ($('#client-rep-name').value || '-') + '     Title: ' + ($('#client-rep-title').value || '-') + '     Date: ' + formatDateDDMonYYYY($('#sig-client-date') ? $('#sig-client-date').value : ''), 8, false);
+      const clientSig = resolveSigImage('sig-client', 'client');
       if (clientSig) {
-        checkPage(30);
-        try { doc.addImage(clientSig, 'JPEG', margin, y, 50, 20); y += 24; } catch (_) {}
+        checkPage(32);
+        try { doc.addImage(clientSig, 'JPEG', margin, y, 50, 20); } catch (e) {
+          try { doc.addImage(clientSig, 'PNG', margin, y, 50, 20); } catch (_) {}
+        }
+        drawRubberStamp(pageW - margin - 58, y);
+        y += 26;
+      } else {
+        checkPage(28);
+        drawRubberStamp(pageW - margin - 58, y);
+        y += 26;
       }
-      if ($('#client-comments').value) bodyLine('Comments: ' + $('#client-comments').value, 7.5, false);
+      if ($('#client-comments') && $('#client-comments').value) bodyLine('Comments: ' + $('#client-comments').value, 7.5, false);
 
       // Photos on separate pages
       if (state.photos.length) {
@@ -1553,7 +1671,7 @@
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(9);
           doc.setTextColor(...navy);
-          doc.text('Photographic Evidence – ' + p.name, margin, 18);
+          doc.text('Photographic Evidence - ' + p.name, margin, 18);
           try {
             doc.addImage(p.dataUrl, 'JPEG', margin, 24, usable, 0);
           } catch (e) {
@@ -1596,7 +1714,7 @@
       try {
         await navigator.share({
           title: state.pdfFileName,
-          text: `Pump & Dispenser Inspection Checklist – ${$('#doc-number').value}`,
+          text: `Pump & Dispenser Inspection Checklist - ${$('#doc-number').value}`,
           files: [file]
         });
       } catch (e) {
@@ -1651,10 +1769,10 @@
     if ($('#doc-number')) {
       $('#doc-number').value = generateDocNumber(); // e.g. INSP/2026/001
     }
-    // Header badge – fixed controlled document number (no date)
+    // Header badge - fixed controlled document number (no date)
     const numDisp = $('#doc-number-display');
     if (numDisp) {
-      numDisp.textContent = 'Checklist No: INSP/FDU&Pumps/ControlledDoc/Vol-01';
+      numDisp.textContent = 'Controlled Doc No: INSP/FDU&Pumps/ControlledDoc/Vol-01';
     }
 
     initSelectors();
