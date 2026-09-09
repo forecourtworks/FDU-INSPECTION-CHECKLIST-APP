@@ -81,6 +81,59 @@
       box-shadow: 0 2px 12px rgba(0,0,0,0.25);
     }
 
+
+    .jha-table-wrap { overflow-x: auto; margin: 8px 0 14px; }
+    .jha-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      min-width: 640px;
+    }
+    .jha-table th, .jha-table td {
+      border: 1px solid #c5d0dc;
+      padding: 6px 6px;
+      vertical-align: top;
+      text-align: left;
+    }
+    .jha-table th {
+      background: #0d478c;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.72rem;
+    }
+    .jha-table td select, .jha-table td input {
+      width: 100%;
+      font-size: 0.75rem;
+      padding: 4px;
+    }
+    .jha-signoff {
+      margin-top: 18px;
+      padding: 14px;
+      border: 1.5px solid #0d478c;
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+    .jha-signoff .ack {
+      font-size: 0.82rem;
+      line-height: 1.45;
+      margin-bottom: 12px;
+      color: #1e2632;
+    }
+    .jha-sign-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 720px) {
+      .jha-sign-row { grid-template-columns: 1.2fr 0.9fr 1.2fr 1.2fr; }
+    }
+    .jha-sig-box {
+      border: 1px dashed #94a3b8;
+      border-radius: 8px;
+      background: #fff;
+      min-height: 90px;
+    }
+    .jha-sig-box canvas { width: 100% !important; height: 90px !important; display: block; }
     .app-header-top {
       display: flex;
       align-items: flex-start;
@@ -93,7 +146,7 @@
       max-width: 220px;
       object-fit: contain;
       flex-shrink: 0;
-      background: transparent;
+      background: #000;
       border-radius: 4px;
       padding: 4px 8px;
     }
@@ -880,12 +933,51 @@
         <span><span class="step-num">2</span> Job Safety &amp; Hazard Analysis (Mandatory)</span>
       </div>
       <div class="step-body">
-        <div class="section-note">Complete before any work. LOTO must be applied where energy sources exist.</div>
+        <div class="section-note">Complete before any work. LOTO must be applied where energy sources exist. Table: 5 columns × 8 rows (header + 7 hazards).</div>
         <div id="jha-container"></div>
-        <div class="form-group" style="margin-top:12px;">
-          <label>Technician JHA Sign-off Name <span class="req">*</span></label>
-          <input type="text" id="jha-sign-name" />
+
+        <div class="jha-signoff" id="jha-signoff-block">
+          <h4 style="font-size:0.9rem;color:var(--navy);margin-bottom:8px;">JHA Sign-Off</h4>
+          <p class="ack">I the undersigned technician, acknowledge that I have reviewed this Job Hazard Analysis (JHA), understand the hazards associated with the assigned tasks, and agree to follow all specified safety procedures, control measures, and required personal protective equipment (PPE). I understand that if conditions change or new hazards arise, I must stop work and notify my supervisor.</p>
+          <div class="jha-sign-row">
+            <div class="form-group">
+              <label>Technician Name <span class="req">*</span></label>
+              <input type="text" id="jha-sign-name" class="auto-caps" placeholder="Full name" />
+            </div>
+            <div class="form-group">
+              <label>Date <span class="req">*</span></label>
+              <input type="date" id="jha-sign-date" />
+              <div class="help">Displayed as DD-MON-YYYY</div>
+            </div>
+            <div class="form-group">
+              <label>Technician Signature <span class="req">*</span></label>
+              <div class="jha-sig-box"><canvas id="sig-jha-tech"></canvas></div>
+              <div class="sig-actions">
+                <button type="button" class="btn btn-outline btn-sm" data-clear-sig="sig-jha-tech">Clear Pad</button>
+              </div>
+              <div class="sig-file-row">
+                <label class="btn btn-outline btn-sm" style="cursor:pointer;">📎 Attach Signature File
+                  <input type="file" id="sig-jha-tech-file" accept="image/*" hidden />
+                </label>
+                <img id="sig-jha-tech-file-preview" class="sig-preview" style="display:none;" alt="JHA tech signature" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Supervisor Sign</label>
+              <div class="jha-sig-box"><canvas id="sig-jha-supervisor"></canvas></div>
+              <div class="sig-actions">
+                <button type="button" class="btn btn-outline btn-sm" data-clear-sig="sig-jha-supervisor">Clear Pad</button>
+              </div>
+              <div class="sig-file-row">
+                <label class="btn btn-outline btn-sm" style="cursor:pointer;">📎 Attach Signature File
+                  <input type="file" id="sig-jha-supervisor-file" accept="image/*" hidden />
+                </label>
+                <img id="sig-jha-supervisor-file-preview" class="sig-preview" style="display:none;" alt="JHA supervisor signature" />
+              </div>
+            </div>
+          </div>
         </div>
+
         <button type="button" class="btn btn-primary btn-block" data-confirm="1" style="margin-top:12px;">Confirm JHA &amp; Continue</button>
       </div>
     </div>

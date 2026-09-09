@@ -16,7 +16,7 @@
     activeSteps: [0, 1, 7, 8, 9, 10], // always-on steps; others added by service type
     equipType: '',
     serviceTypes: [],
-    sigFiles: { tech: null, client: null },
+    sigFiles: { tech: null, client: null, jhaTech: null, jhaSupervisor: null },
     logoMarkDataUrl: null
   };
 
@@ -789,23 +789,35 @@
 
   function renderJHA() {
     const cont = $('#jha-container');
-    let html = '';
+    // 5 columns × 8 rows (1 header + 7 hazard rows)
+    let html = `<div class="jha-table-wrap"><table class="jha-table" id="jha-table">
+      <thead>
+        <tr>
+          <th style="width:14%">Hazard Class</th>
+          <th style="width:22%">Possible Hazard</th>
+          <th style="width:28%">Control Measures</th>
+          <th style="width:16%">Compliance Status</th>
+          <th style="width:20%">Remarks</th>
+        </tr>
+      </thead>
+      <tbody>`;
     JHA_ITEMS.forEach(it => {
-      html += `<div class="check-row" data-id="${it.id}">
-        <div>
-          <strong>${it.step}</strong>
-          <div class="criteria"><b>Hazard:</b> ${it.hazard}<br><b>Control:</b> ${it.control}</div>
-        </div>
-        <div>
+      const cls = (it.step || '').replace(/^\d+\.\s*/, '');
+      html += `<tr class="check-row" data-id="${it.id}">
+        <td><strong>${cls}</strong></td>
+        <td>${it.hazard}</td>
+        <td>${it.control}</td>
+        <td>
           <select class="result-sel" data-id="${it.id}">
-            <option value="">-</option>
-            <option value="YES">YES</option>
-            <option value="NO">NO</option>
-            <option value="N/A">N/A</option>
+            <option value="">— Select —</option>
+            <option value="Complied">Complied</option>
+            <option value="Not Complied">Not Complied</option>
           </select>
-        </div>
-      </div>`;
+        </td>
+        <td><input type="text" class="remarks-input auto-caps" data-remarks="${it.id}" placeholder="Remarks" /></td>
+      </tr>`;
     });
+    html += `</tbody></table></div>`;
     cont.innerHTML = html;
   }
 
@@ -871,7 +883,7 @@
     const ncs = [];
     $$('.result-sel').forEach(sel => {
       const val = sel.value;
-      if (val === 'NC' || val === 'Missing' || val === 'NO') {
+      if (val === 'NC' || val === 'Missing' || val === 'NO' || val === 'Not Complied') {
         const row = sel.closest('.check-row');
         const title = row ? (row.querySelector('strong')?.textContent || sel.dataset.id) : sel.dataset.id;
         const remarks = row?.querySelector('.remarks-input')?.value || '';
@@ -960,7 +972,28 @@
     $('#btn-next').textContent = idx >= state.activeSteps.length - 1 ? 'Review' : 'Next ->';
 
     // Special renders - only build once so Back/Next does not wipe entered data
-    if (n === 1 && (!$('#jha-container') || !$('#jha-container').children.length)) renderJHA();
+    if (n === 1) {
+      if (!$('#jha-container') || !$('#jha-container').children.length) renderJHA();
+      setTimeout(() => {
+        ['sig-jha-tech', 'sig-jha-supervisor'].forEach(id => {
+          if (!sigPads[id] && document.getElementById(id)) {
+            try {
+              const canvas = document.getElementById(id);
+              sigPads[id] = new SignaturePad(canvas, { backgroundColor: 'rgb(255,255,255)', penColor: 'rgb(13,71,140)' });
+              const ratio = Math.max(window.devicePixelRatio || 1, 1);
+              const rect = canvas.getBoundingClientRect();
+              canvas.width = rect.width * ratio;
+              canvas.height = rect.height * ratio;
+              canvas.getContext('2d').scale(ratio, ratio);
+              sigPads[id].clear();
+            } catch (e) { console.warn(e); }
+          }
+        });
+        initSigFileInputs();
+        if ($('#jha-sign-date') && !$('#jha-sign-date').value) $('#jha-sign-date').value = todayISO();
+        if ($('#jha-sign-name') && !$('#jha-sign-name').value && $('#tech-lead')) $('#jha-sign-name').value = $('#tech-lead').value || '';
+      }, 120);
+    }
     if (n === 2 && (!$('#preinstall-container') || !$('#preinstall-container').children.length)) renderCheckList('#preinstall-container', PREINSTALL_ITEMS);
     if (n === 3 && (!$('#install-container') || !$('#install-container').children.length)) renderCheckList('#install-container', INSTALL_ITEMS);
     if (n === 4 && (!$('#pm-container') || !$('#pm-container').children.length)) renderPM();
@@ -1032,7 +1065,11 @@
     }
     if (step === 1) {
       if (!$('#jha-sign-name').value.trim()) {
-        toast('JHA sign-off name is required', 'error');
+        toast('JHA technician name is required', 'error');
+        return false;
+      }
+      if ($('#jha-sign-date') && !$('#jha-sign-date').value) {
+        toast('JHA sign-off date is required', 'error');
         return false;
       }
       return true;
@@ -1137,8 +1174,10 @@
             prev.style.display = 'block';
           }
           // Clear pad when file chosen so embed uses file
-          if (sigPads['sig-' + (key === 'tech' ? 'tech' : 'client')]) {
-            try { sigPads['sig-' + (key === 'tech' ? 'tech' : 'client')].clear(); } catch (_) {}
+          const padMap = { tech: 'sig-tech', client: 'sig-client', jhaTech: 'sig-jha-tech', jhaSupervisor: 'sig-jha-supervisor' };
+          const padId = padMap[key];
+          if (padId && sigPads[padId]) {
+            try { sigPads[padId].clear(); } catch (_) {}
           }
         };
         reader.readAsDataURL(f);
@@ -1146,6 +1185,8 @@
     }
     bind('sig-tech-file', 'sig-tech-file-preview', 'tech');
     bind('sig-client-file', 'sig-client-file-preview', 'client');
+    bind('sig-jha-tech-file', 'sig-jha-tech-file-preview', 'jhaTech');
+    bind('sig-jha-supervisor-file', 'sig-jha-supervisor-file-preview', 'jhaSupervisor');
   }
 
   function resolveSigImage(padId, fileKey) {
@@ -1335,6 +1376,8 @@
         if (val === 'N/A' || val === 'NA') return { text: 'N/A', colour: grey };
         if (val === 'Available') return { text: 'Available', colour: green };
         if (val === 'Missing') return { text: 'Missing', colour: red };
+        if (val === 'Complied') return { text: 'Complied', colour: green };
+        if (val === 'Not Complied') return { text: 'Not Complied', colour: red };
         if (val === 'YES') return { text: 'YES', colour: green };
         if (val === 'NO') return { text: 'NO', colour: red };
         return { text: val || '-', colour: dark };
@@ -1497,31 +1540,96 @@
       ]);
       y += 2;
 
-      // 2. JHA
+      // 2. JHA — 5 columns × 8 rows (header + 7), sign-off at bottom
       sectionBar('2. JOB SAFETY & HAZARD ANALYSIS');
-      bodyLine('JHA Sign-off- This is your acceptance to apply and follow ALL the safety controls for this job : ' + ($('#jha-sign-name').value || '-'), 8, false);
-      // JHA uses different selects; dump as table-like
-      const jhaItems = JHA_ITEMS.map(it => ({
-        id: it.id,
-        item: it.step,
-        criteria: 'Hazard: ' + it.hazard + ' | Control: ' + it.control
-      }));
-      // mini header already done by sectionBar; reuse dump logic lightly
-      jhaItems.forEach(it => {
-        const sel = document.querySelector('.result-sel[data-id="' + it.id + '"]');
-        const val = sel ? sel.value : '-';
-        const st = statusFull(val);
-        checkPage(8);
+      {
+        const colW = [usable * 0.14, usable * 0.20, usable * 0.28, usable * 0.16, usable * 0.22];
+        const headers = ['Hazard Class', 'Possible Hazard', 'Control Measures', 'Compliance', 'Remarks'];
+        checkPage(12);
+        doc.setFillColor(13, 71, 140);
+        doc.rect(margin, y, usable, 6.5, 'F');
+        doc.setTextColor(255, 255, 255);
+        setAppFont(doc, 'bold', 5.5);
+        let hx = margin + 0.6;
+        headers.forEach((h, i) => { textInCol(doc, h, hx, y + 4.2, colW[i]); hx += colW[i]; });
+        y += 7;
+
+        JHA_ITEMS.forEach((it) => {
+          const sel = document.querySelector('.result-sel[data-id="' + it.id + '"]');
+          const remEl = document.querySelector('.remarks-input[data-remarks="' + it.id + '"]');
+          const val = sel ? sel.value : '';
+          const rem = remEl ? remEl.value : '';
+          const st = statusFull(val);
+          const cls = (it.step || '').replace(/^\d+\.\s*/, '');
+          setAppFont(doc, 'normal', 6);
+          const c0 = doc.splitTextToSize(cls, colW[0] - 1.5);
+          const c1 = doc.splitTextToSize(it.hazard, colW[1] - 1.5);
+          const c2 = doc.splitTextToSize(it.control, colW[2] - 1.5);
+          const c3 = doc.splitTextToSize(st.text, colW[3] - 1.5);
+          const c4 = doc.splitTextToSize(rem || '-', colW[4] - 1.5);
+          const maxL = Math.max(c0.length, c1.length, c2.length, c3.length, c4.length, 1);
+          const rowH = Math.max(6, maxL * 3.2 + 2);
+          checkPage(rowH + 2);
+          doc.setDrawColor(200, 210, 220);
+          doc.setLineWidth(0.12);
+          doc.rect(margin, y, usable, rowH);
+          let lx = margin;
+          for (let i = 0; i < 4; i++) { lx += colW[i]; doc.line(lx, y, lx, y + rowH); }
+          const cols = [c0, c1, c2, c3, c4];
+          let cx = margin + 0.6;
+          cols.forEach((lines, i) => {
+            if (i === 3) { setAppFont(doc, 'bold', 6); doc.setTextColor(...st.colour); }
+            else { setAppFont(doc, 'normal', 6); doc.setTextColor(...dark); }
+            doc.text(lines, cx, y + 3.5);
+            cx += colW[i];
+          });
+          y += rowH;
+        });
+        y += 4;
+
+        // Sign-off block at bottom of JHA
+        checkPage(42);
+        setAppFont(doc, 'bold', 8);
+        doc.setTextColor(...navy);
+        doc.text('JHA Sign-Off', margin, y);
+        y += 4;
         setAppFont(doc, 'normal', 7);
         doc.setTextColor(...dark);
-        const lines = doc.splitTextToSize(it.item + ' - ' + it.criteria, usable * 0.72);
-        doc.text(lines, margin, y);
-        setAppFont(doc, 'bold');
-        doc.setTextColor(...st.colour);
-        doc.text(st.text, margin + usable * 0.74, y);
-        y += Math.max(lines.length * 3.5, 4.5);
-      });
-      y += 2;
+        const ack = 'I the undersigned technician, acknowledge that I have reviewed this Job Hazard Analysis (JHA), understand the hazards associated with the assigned tasks, and agree to follow all specified safety procedures, control measures, and required personal protective equipment (PPE). I understand that if conditions change or new hazards arise, I must stop work and notify my supervisor.';
+        const ackLines = doc.splitTextToSize(ack, usable);
+        doc.text(ackLines, margin, y);
+        y += ackLines.length * 3.4 + 3;
+
+        setAppFont(doc, 'normal', 7.5);
+        doc.text('Technician Name: ' + ($('#jha-sign-name').value || '_______________'), margin, y);
+        doc.text('Date: ' + formatDateDDMonYYYY($('#jha-sign-date') ? $('#jha-sign-date').value : ''), margin + usable * 0.55, y);
+        y += 5;
+
+        const jhaTechSig = resolveSigImage('sig-jha-tech', 'jhaTech');
+        const jhaSupSig = resolveSigImage('sig-jha-supervisor', 'jhaSupervisor');
+        checkPage(28);
+        setAppFont(doc, 'bold', 7);
+        doc.text('Technician Signature', margin, y);
+        doc.text('Supervisor Sign', margin + usable * 0.52, y);
+        y += 2;
+        if (jhaTechSig) {
+          try { doc.addImage(jhaTechSig, 'PNG', margin, y, 55, 18); } catch (e) {
+            try { doc.addImage(jhaTechSig, 'JPEG', margin, y, 55, 18); } catch (_) {}
+          }
+        } else {
+          doc.setDrawColor(180, 180, 180);
+          doc.rect(margin, y, 55, 18);
+        }
+        if (jhaSupSig) {
+          try { doc.addImage(jhaSupSig, 'PNG', margin + usable * 0.52, y, 55, 18); } catch (e) {
+            try { doc.addImage(jhaSupSig, 'JPEG', margin + usable * 0.52, y, 55, 18); } catch (_) {}
+          }
+        } else {
+          doc.setDrawColor(180, 180, 180);
+          doc.rect(margin + usable * 0.52, y, 55, 18);
+        }
+        y += 22;
+      }
 
       if (state.serviceTypes.includes('1')) dumpTableSection('3. PRE-INSTALLATION SITE READINESS', PREINSTALL_ITEMS);
       if (state.serviceTypes.includes('2')) dumpTableSection('4. ASSET INSTALLATION CHECKLIST', INSTALL_ITEMS);
