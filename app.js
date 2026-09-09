@@ -275,23 +275,11 @@
           </label>
           <span style="font-size:0.75rem;color:#6b7280;">Saved to Photographic Evidence</span>
         </div>`;
-      if (calc) {
-        const statusColour = calc.pass ? '#1a7346' : '#b91c1c';
-        html += `<div style="margin-top:8px;font-size:0.82rem;">
-          <div><b>Variance (L):</b> ${calc.varianceL >= 0 ? '+' : ''}${calc.varianceL.toFixed(2)} &nbsp; (${calc.regType})</div>
-          <div class="formula-note">Variance = Indicated - True Proven</div>
-          <div><b>Relative Error vs True (%):</b> ${calc.relVsTrue >= 0 ? '+' : ''}${calc.relVsTrue.toFixed(2)}%</div>
-          <div class="formula-note">(Indicated - True) / True x 100</div>
-          <div><b>Relative Indication Error vs Meter (%):</b> ${calc.relVsInd >= 0 ? '+' : ''}${calc.relVsInd.toFixed(2)}%</div>
-          <div class="formula-note">(Indicated - True) / Indicated x 100 &nbsp;|&nbsp; Limit: ${calc.limitText}</div>
-          <div style="margin-top:4px;"><b>Status:</b> <span style="color:${statusColour};font-weight:700;font-family:Arial,sans-serif;font-size:12pt;">${calc.status}</span></div>
-          <div style="margin-top:4px;color:#4b5563;">${calc.narrative}</div>
-        </div>
-        <div class="verdict-box"><span class="${calc.pass ? 'pass' : 'fail'}">${calc.pass ? 'PASS' : 'FAIL'}</span> - ${calc.verdict.replace(/^VERDICT:\s*Meter (PASSES|FAILS) verification\.\s*/, '')}</div>`;
-      }
-      html += `</div>`;
+      html += `<div id="cal-result-${stage}-${idx}"></div></div>`;
+
     });
     rowsCont.innerHTML = html;
+
 
     rowsCont.querySelectorAll('.cal-capacity-radio').forEach(el => {
       el.addEventListener('change', () => {
@@ -308,6 +296,7 @@
       el.addEventListener('input', () => updateCalReading(el));
       el.addEventListener('change', () => updateCalReading(el));
     });
+    arr.forEach((_, idx) => refreshCalRowResult(stage, idx));
     rowsCont.querySelectorAll('.cal-photo').forEach(inp => {
       inp.addEventListener('change', (e) => {
         const files = e.target.files;
@@ -344,10 +333,48 @@
     const arr = stage === 'new' ? calState.newFdu : calState.inService;
     if (!arr[idx]) return;
     if (el.classList.contains('cal-actual')) arr[idx].actual = el.value;
-    if (el.classList.contains('cal-nozzle')) arr[idx].nozzleId = el.value.toUpperCase();
+    if (el.classList.contains('cal-nozzle')) arr[idx].nozzleId = el.value; // do not force case on every key
     if (el.classList.contains('cal-flow')) arr[idx].flow = el.value;
+    // Update live results for THIS row only — no full re-render (avoids focus loss & scroll jump)
+    refreshCalRowResult(stage, idx);
+  }
+
+  function refreshCalRowResult(stage, idx) {
+    const arr = stage === 'new' ? calState.newFdu : calState.inService;
+    const r = arr[idx];
+    if (!r) return;
+    const resultEl = document.getElementById('cal-result-' + stage + '-' + idx);
+    if (!resultEl) return;
+    if (r.indicated === '' || r.actual === '' || isNaN(parseFloat(r.actual))) {
+      resultEl.innerHTML = '';
+      return;
+    }
+    const calc = calcMeterError(parseFloat(r.indicated), parseFloat(r.actual), r.capacity, stage);
+    const statusColour = calc.pass ? '#1a7346' : '#b91c1c';
+    resultEl.innerHTML = `<div style="margin-top:8px;font-size:0.82rem;">
+      <div><b>Variance (L):</b> ${calc.varianceL >= 0 ? '+' : ''}${calc.varianceL.toFixed(2)} &nbsp; (${calc.regType})</div>
+      <div class="formula-note">Variance = Indicated - True Proven</div>
+      <div><b>Relative Error vs True (%):</b> ${calc.relVsTrue >= 0 ? '+' : ''}${calc.relVsTrue.toFixed(2)}%</div>
+      <div><b>Relative Indication Error vs Meter (%):</b> ${calc.relVsInd >= 0 ? '+' : ''}${calc.relVsInd.toFixed(2)}%</div>
+      <div style="margin-top:4px;"><b>Status:</b> <span style="color:${statusColour};font-weight:700;font-family:Arial,sans-serif;font-size:12pt;">${calc.status}</span></div>
+      <div style="margin-top:4px;color:#4b5563;">${calc.narrative}</div>
+      <div class="verdict-box"><span class="${calc.pass ? 'pass' : 'fail'}">${calc.pass ? 'PASS' : 'FAIL'}</span> — ${calc.verdict.replace(/^VERDICT:\s*Meter (PASSES|FAILS) verification\.\s*/, '')}</div>
+    </div>`;
+    // Update summary without touching inputs
     const containerId = stage === 'new' ? 'cal-new-container' : 'cal-inservice-container';
-    renderCalRows(containerId, stage);
+    const summaryCont = document.getElementById(containerId + '-summary');
+    if (summaryCont) {
+      const valid = arr.filter(x => x.indicated !== '' && x.actual !== '').map(x =>
+        calcMeterError(parseFloat(x.indicated), parseFloat(x.actual), x.capacity, stage)
+      );
+      if (valid.length >= 1) {
+        const fails = valid.filter(v => !v.pass).length;
+        summaryCont.innerHTML = `<div style="background:#f1f5f9;padding:8px 10px;border-radius:6px;">
+          <b>${valid.length} reading(s):</b> ${valid.length - fails} PASS, ${fails} FAIL
+          ${fails ? ' — FAIL readings will appear in the Non-Conformance log.' : ''}
+        </div>`;
+      } else summaryCont.innerHTML = '';
+    }
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────
@@ -551,10 +578,14 @@
     } else {
       d = new Date(isoOrDate);
     }
-    if (isNaN(d.getTime())) return '-';
+    if (isNaN(d.getTime())) return String(isoOrDate);
     const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
     return String(d.getDate()).padStart(2, '0') + '-' + months[d.getMonth()] + '-' + d.getFullYear();
   }
+  // Aliases so PDF path never throws ReferenceError on casing variants
+  const formatDateDDMONYYYY = formatDateDDMonYYYY;
+  window.formatDateDDMonYYYY = formatDateDDMonYYYY;
+  window.formatDateDDMONYYYY = formatDateDDMonYYYY;
 
   function threeLetters(str) {
     const cleaned = (str || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
@@ -789,7 +820,7 @@
 
   function renderJHA() {
     const cont = $('#jha-container');
-    // 5 columns × 8 rows (1 header + 7 hazard rows)
+    // 5 columns × 8 rows — cols 1-3 prefilled & editable; col4 dropdown; col5 remarks
     let html = `<div class="jha-table-wrap"><table class="jha-table" id="jha-table">
       <thead>
         <tr>
@@ -804,21 +835,39 @@
     JHA_ITEMS.forEach(it => {
       const cls = (it.step || '').replace(/^\d+\.\s*/, '');
       html += `<tr class="check-row" data-id="${it.id}">
-        <td><strong>${cls}</strong></td>
-        <td>${it.hazard}</td>
-        <td>${it.control}</td>
+        <td><input type="text" class="jha-edit auto-caps" data-field="class" data-id="${it.id}" value="${cls.replace(/"/g, '&quot;')}" /></td>
+        <td><textarea class="jha-edit" data-field="hazard" data-id="${it.id}" rows="2">${it.hazard}</textarea></td>
+        <td><textarea class="jha-edit" data-field="control" data-id="${it.id}" rows="2">${it.control}</textarea></td>
         <td>
-          <select class="result-sel" data-id="${it.id}">
+          <select class="result-sel jha-status" data-id="${it.id}">
             <option value="">— Select —</option>
             <option value="Complied">Complied</option>
             <option value="Not Complied">Not Complied</option>
           </select>
         </td>
-        <td><input type="text" class="remarks-input auto-caps" data-remarks="${it.id}" placeholder="Remarks" /></td>
+        <td><input type="text" class="remarks-input auto-caps" data-remarks="${it.id}" placeholder="Technician remarks" /></td>
       </tr>`;
     });
     html += `</tbody></table></div>`;
     cont.innerHTML = html;
+    cont.querySelectorAll('.jha-status').forEach(sel => {
+      sel.addEventListener('change', () => {
+        sel.classList.remove('status-complied', 'status-not-complied');
+        if (sel.value === 'Complied') sel.classList.add('status-complied');
+        if (sel.value === 'Not Complied') sel.classList.add('status-not-complied');
+      });
+    });
+    cont.querySelectorAll('.jha-edit').forEach(el => {
+      el.addEventListener('input', () => {
+        const id = el.dataset.id;
+        const field = el.dataset.field;
+        const item = JHA_ITEMS.find(x => x.id === id);
+        if (!item) return;
+        if (field === 'class') item.step = el.value;
+        if (field === 'hazard') item.hazard = el.value;
+        if (field === 'control') item.control = el.value;
+      });
+    });
   }
 
   function renderReg() {
@@ -1081,12 +1130,14 @@
       }
       const techPad = sigPads['sig-tech'];
       const clientPad = sigPads['sig-client'];
-      if (techPad && techPad.isEmpty()) {
-        toast('Technician signature is required', 'error');
+      const techOk = !!(state.sigFiles.tech) || (techPad && !techPad.isEmpty());
+      const clientOk = !!(state.sigFiles.client) || (clientPad && !clientPad.isEmpty());
+      if (!techOk) {
+        toast('Technician signature is required (draw on pad or attach file)', 'error');
         return false;
       }
-      if (clientPad && clientPad.isEmpty()) {
-        toast('Client signature is required', 'error');
+      if (!clientOk) {
+        toast('Client signature is required (draw on pad or attach file)', 'error');
         return false;
       }
       return true;
@@ -1140,7 +1191,7 @@
       if (!canvas) return;
       const ratio = Math.max(window.devicePixelRatio || 1, 1);
       canvas.width = canvas.offsetWidth * ratio;
-      canvas.height = canvas.offsetHeight * ratio;
+      canvas.height = (canvas.offsetHeight || 100) * ratio;
       canvas.getContext('2d').scale(ratio, ratio);
       if (sigPads[id]) {
         try { sigPads[id].off(); } catch (_) {}
@@ -1149,15 +1200,38 @@
         backgroundColor: 'rgb(255,255,255)',
         penColor: 'rgb(13, 38, 77)'
       });
+      // Drawing on pad dismisses file overlay in the same box
+      canvas.addEventListener('pointerdown', () => {
+        const keyMap = { 'sig-tech': 'tech', 'sig-client': 'client' };
+        const key = keyMap[id];
+        if (key && state.sigFiles[key]) {
+          state.sigFiles[key] = null;
+          const wrap = document.getElementById('wrap-' + id);
+          if (wrap) wrap.classList.remove('has-file');
+          const prev = document.getElementById(id + '-file-preview');
+          if (prev) { prev.removeAttribute('src'); prev.style.display = 'none'; }
+        }
+      }, { once: false });
     });
   }
 
   function clearSig(id) {
-    if (sigPads[id]) sigPads[id].clear();
+    const keyMap = {
+      'sig-tech': 'tech',
+      'sig-client': 'client',
+      'sig-jha-tech': 'jhaTech',
+      'sig-jha-supervisor': 'jhaSupervisor'
+    };
+    if (typeof clearSigUnified === 'function') {
+      clearSigUnified(id, keyMap[id] || null);
+    } else if (sigPads[id]) {
+      sigPads[id].clear();
+    }
   }
 
 
   function initSigFileInputs() {
+    const padMap = { tech: 'sig-tech', client: 'sig-client', jhaTech: 'sig-jha-tech', jhaSupervisor: 'sig-jha-supervisor' };
     function bind(inputId, previewId, key) {
       const inp = document.getElementById(inputId);
       const prev = document.getElementById(previewId);
@@ -1169,13 +1243,14 @@
         const reader = new FileReader();
         reader.onload = (e) => {
           state.sigFiles[key] = e.target.result;
+          const padId = padMap[key];
+          const wrap = document.getElementById('wrap-' + padId);
           if (prev) {
             prev.src = e.target.result;
             prev.style.display = 'block';
           }
-          // Clear pad when file chosen so embed uses file
-          const padMap = { tech: 'sig-tech', client: 'sig-client', jhaTech: 'sig-jha-tech', jhaSupervisor: 'sig-jha-supervisor' };
-          const padId = padMap[key];
+          if (wrap) wrap.classList.add('has-file');
+          // Clear pad strokes; file image sits in the same box
           if (padId && sigPads[padId]) {
             try { sigPads[padId].clear(); } catch (_) {}
           }
@@ -1187,6 +1262,22 @@
     bind('sig-client-file', 'sig-client-file-preview', 'client');
     bind('sig-jha-tech-file', 'sig-jha-tech-file-preview', 'jhaTech');
     bind('sig-jha-supervisor-file', 'sig-jha-supervisor-file-preview', 'jhaSupervisor');
+  }
+
+  function clearSigUnified(padId, fileKey) {
+    if (sigPads[padId]) {
+      try { sigPads[padId].clear(); } catch (_) {}
+    }
+    if (fileKey) state.sigFiles[fileKey] = null;
+    const prev = document.getElementById(padId === 'sig-tech' ? 'sig-tech-file-preview'
+      : padId === 'sig-client' ? 'sig-client-file-preview'
+      : padId === 'sig-jha-tech' ? 'sig-jha-tech-file-preview'
+      : padId === 'sig-jha-supervisor' ? 'sig-jha-supervisor-file-preview' : null);
+    if (prev) { prev.removeAttribute('src'); prev.style.display = 'none'; }
+    const wrap = document.getElementById('wrap-' + padId);
+    if (wrap) wrap.classList.remove('has-file');
+    const fileInp = document.getElementById(padId + '-file');
+    if (fileInp) fileInp.value = '';
   }
 
   function resolveSigImage(padId, fileKey) {
@@ -1254,6 +1345,13 @@
   }
 
   async function generatePDF() {
+    const formatDateDDMonYYYY = window.formatDateDDMonYYYY || function (isoOrDate) {
+      if (!isoOrDate) return '-';
+      const d = new Date(typeof isoOrDate === 'string' && /^\d{4}-\d{2}-\d{2}/.test(isoOrDate) ? isoOrDate + 'T00:00:00' : isoOrDate);
+      if (isNaN(d.getTime())) return '-';
+      const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+      return String(d.getDate()).padStart(2, '0') + '-' + months[d.getMonth()] + '-' + d.getFullYear();
+    };
     if (checklistStatusesIncomplete()) {
       const go = confirm('Checklist status fields appear empty. Generate PDF anyway?');
       if (!go) return;
@@ -1483,13 +1581,13 @@
       doc.rect(margin, y, usable, 8, 'FD');
       setAppFont(doc, 'bold', 7.5);
       doc.setTextColor(...dark);
-      doc.text('Controlled Doc No: insp/fdu&pumps/Vol-001', margin + 3, y + 5.2);
+      doc.text('Controlled Doc No: INSP/FDU&Pumps/ControlledDoc/Vol-01', margin + 3, y + 5.2);
       doc.text('Linked WO#  ' + ($('#linked-wo').value || '-'), margin + usable * 0.62, y + 5.2);
       y += 11;
 
       // 1. GENERAL INFORMATION
       sectionBar('1. JOB BASICS, EQUIPMENT TYPE & INSPECTION SCOPE');
-      const inspDateFmt = formatDateDDMONYYYY($('#doc-date') ? $('#doc-date').value : '');
+      const inspDateFmt = formatDateDDMonYYYY($('#doc-date') ? $('#doc-date').value : '');
       kvLine([
         { k: 'Inspection Number', v: $('#doc-number').value },
         { k: 'Inspection Date', v: inspDateFmt }
@@ -1519,7 +1617,7 @@
         { k: 'Validity Period', v: $('#warranty-validity').value || '-' }
       ]);
       kvLine([
-        { k: 'Valid Until', v: formatDateDDMONYYYY($('#valid-until') ? $('#valid-until').value : '') },
+        { k: 'Valid Until', v: formatDateDDMonYYYY($('#valid-until') ? $('#valid-until').value : '') },
         { k: 'Vendor Name', v: $('#vendor-name').value || '-' }
       ]);
       kvLine([
@@ -1560,11 +1658,16 @@
           const val = sel ? sel.value : '';
           const rem = remEl ? remEl.value : '';
           const st = statusFull(val);
-          const cls = (it.step || '').replace(/^\d+\.\s*/, '');
+          const classEl = document.querySelector('.jha-edit[data-field="class"][data-id="' + it.id + '"]');
+          const hazEl = document.querySelector('.jha-edit[data-field="hazard"][data-id="' + it.id + '"]');
+          const ctrlEl = document.querySelector('.jha-edit[data-field="control"][data-id="' + it.id + '"]');
+          const cls = (classEl && classEl.value) ? classEl.value : (it.step || '').replace(/^\d+\.\s*/, '');
+          const haz = (hazEl && hazEl.value) ? hazEl.value : it.hazard;
+          const ctrl = (ctrlEl && ctrlEl.value) ? ctrlEl.value : it.control;
           setAppFont(doc, 'normal', 6);
           const c0 = doc.splitTextToSize(cls, colW[0] - 1.5);
-          const c1 = doc.splitTextToSize(it.hazard, colW[1] - 1.5);
-          const c2 = doc.splitTextToSize(it.control, colW[2] - 1.5);
+          const c1 = doc.splitTextToSize(haz, colW[1] - 1.5);
+          const c2 = doc.splitTextToSize(ctrl, colW[2] - 1.5);
           const c3 = doc.splitTextToSize(st.text, colW[3] - 1.5);
           const c4 = doc.splitTextToSize(rem || '-', colW[4] - 1.5);
           const maxL = Math.max(c0.length, c1.length, c2.length, c3.length, c4.length, 1);
@@ -1602,7 +1705,7 @@
 
         setAppFont(doc, 'normal', 7.5);
         doc.text('Technician Name: ' + ($('#jha-sign-name').value || '_______________'), margin, y);
-        doc.text('Date: ' + formatDateDDMONYYYY($('#jha-sign-date') ? $('#jha-sign-date').value : ''), margin + usable * 0.55, y);
+        doc.text('Date: ' + formatDateDDMonYYYY($('#jha-sign-date') ? $('#jha-sign-date').value : ''), margin + usable * 0.55, y);
         y += 5;
 
         const jhaTechSig = resolveSigImage('sig-jha-tech', 'jhaTech');

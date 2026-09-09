@@ -117,3 +117,28 @@ Open `index.html` in a modern browser (Chrome/Edge recommended). No build step r
 ---
 
 **FORECOURT WORKS LIMITED** — Engineering Reliability Into Every Forecourt
+
+
+## Known behaviours & recent fixes (Sep 2026)
+
+### Save Draft Locally
+Saves a **JSON** snapshot of form fields to your device for recovery. It is not a PDF. Use **Generate Professional PDF** for the formal report.
+
+### PDF date formatting
+Dates in the PDF use **DD-MON-YYYY** (e.g. 09-SEP-2026). The formatter is bound inside the PDF path so generation does not fail with `formatDateDDMonYYYY is not defined`.
+
+### JHA table
+5 columns × 8 rows (header + 7 hazards):
+1. Hazard Class (pre-filled, editable)
+2. Possible Hazard (pre-filled, editable)
+3. Control Measures (pre-filled, editable)
+4. Compliance Status — dropdown **Complied** (green) / **Not Complied** (red)
+5. Remarks — free text
+
+Sign-off block sits **below** the table (acknowledgment, name, date, technician signature, supervisor signature).
+
+### Signatures (touch + file)
+Technician and client (and JHA) signatures accept **either** pad drawing **or** an attached image file. Validation treats a file attachment as a completed signature.
+
+### Meter / calibration entry
+Typing True Proven Volume updates results **in place** without rebuilding the whole form, so focus stays on the field and the page does not jump to the bottom.

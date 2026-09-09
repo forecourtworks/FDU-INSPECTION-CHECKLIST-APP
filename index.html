@@ -133,6 +133,27 @@
       background: #fff;
       min-height: 90px;
     }
+
+    .jha-table .jha-edit, .jha-table textarea.jha-edit {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      padding: 4px 6px;
+      font-size: 0.75rem;
+      font-family: inherit;
+      background: #fff;
+      resize: vertical;
+    }
+    .jha-table select.jha-status.status-complied {
+      color: #1a7346;
+      font-weight: 700;
+      background: #ecfdf5;
+    }
+    .jha-table select.jha-status.status-not-complied {
+      color: #b91c1c;
+      font-weight: 700;
+      background: #fef2f2;
+    }
     .jha-sig-box canvas { width: 100% !important; height: 90px !important; display: block; }
     .app-header-top {
       display: flex;
@@ -146,7 +167,7 @@
       max-width: 220px;
       object-fit: contain;
       flex-shrink: 0;
-      background: transparent;
+      background: #000;
       border-radius: 4px;
       padding: 4px 8px;
     }
@@ -378,6 +399,40 @@
       cursor: pointer;
     }
     .photo-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+
+    .sig-unified {
+      position: relative;
+      border: 1.5px dashed #94a3b8;
+      border-radius: 8px;
+      background: #fff;
+      min-height: 100px;
+      overflow: hidden;
+    }
+    .sig-unified canvas {
+      width: 100% !important;
+      height: 100px !important;
+      display: block;
+      touch-action: none;
+    }
+    .sig-unified .sig-file-overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #fff;
+      display: none;
+      z-index: 2;
+    }
+    .sig-unified.has-file .sig-file-overlay { display: block; }
+    .sig-unified.has-file canvas { visibility: hidden; }
+    .sig-actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
+    }
     .sig-pad-wrap {
       border: 2px solid #0d478c;
       border-radius: 8px;
@@ -747,7 +802,7 @@
       <img src="forecourt-logo-banner.png" alt="FORECOURT-SWL" class="app-logo" width="220" height="38" />
     </div>
     <div class="wo-meta">
-      <span class="wo-badge" id="doc-number-display">Controlled Doc No: insp/fdu&amp;pumps/Vol-001</span>
+      <span class="wo-badge" id="doc-number-display">Controlled Doc No: INSP/FDU&amp;Pumps/ControlledDoc/Vol-01</span>
       <span class="wo-badge" id="doc-status-display">DRAFT</span>
     </div>
     <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
@@ -781,7 +836,7 @@
           </div>
           <div class="form-group">
             <label>Linked WO#</label>
-            <input type="text" id="linked-wo" class="auto-caps" placeholder="WO-2026-XXXX" />
+            <input type="text" id="linked-wo" class="auto-caps" placeholder="WO-XXXX-XXXX" />
           </div>
 
           <!-- Row 2 -->
@@ -951,29 +1006,29 @@
             </div>
             <div class="form-group">
               <label>Technician Signature <span class="req">*</span></label>
-              <div class="jha-sig-box"><canvas id="sig-jha-tech"></canvas></div>
-              <div class="sig-actions">
-                <button type="button" class="btn btn-outline btn-sm" data-clear-sig="sig-jha-tech">Clear Pad</button>
-              </div>
-              <div class="sig-file-row">
-                <label class="btn btn-outline btn-sm" style="cursor:pointer;">📎 Attach Signature File
-                  <input type="file" id="sig-jha-tech-file" accept="image/*" hidden />
-                </label>
-                <img id="sig-jha-tech-file-preview" class="sig-preview" style="display:none;" alt="JHA tech signature" />
-              </div>
+        <div class="sig-unified" id="wrap-sig-jha-tech">
+          <canvas id="sig-jha-tech"></canvas>
+          <img id="sig-jha-tech-file-preview" class="sig-file-overlay" alt="Signature" />
+        </div>
+        <div class="sig-actions-row">
+          <button type="button" class="btn btn-outline btn-sm" data-clear-sig="sig-jha-tech">Clear</button>
+          <label class="btn btn-outline btn-sm" style="cursor:pointer;">📎 Attach file
+            <input type="file" id="sig-jha-tech-file" accept="image/*" hidden />
+          </label>
+        </div>
             </div>
             <div class="form-group">
               <label>Supervisor Sign</label>
-              <div class="jha-sig-box"><canvas id="sig-jha-supervisor"></canvas></div>
-              <div class="sig-actions">
-                <button type="button" class="btn btn-outline btn-sm" data-clear-sig="sig-jha-supervisor">Clear Pad</button>
-              </div>
-              <div class="sig-file-row">
-                <label class="btn btn-outline btn-sm" style="cursor:pointer;">📎 Attach Signature File
-                  <input type="file" id="sig-jha-supervisor-file" accept="image/*" hidden />
-                </label>
-                <img id="sig-jha-supervisor-file-preview" class="sig-preview" style="display:none;" alt="JHA supervisor signature" />
-              </div>
+        <div class="sig-unified" id="wrap-sig-jha-supervisor">
+          <canvas id="sig-jha-supervisor"></canvas>
+          <img id="sig-jha-supervisor-file-preview" class="sig-file-overlay" alt="Signature" />
+        </div>
+        <div class="sig-actions-row">
+          <button type="button" class="btn btn-outline btn-sm" data-clear-sig="sig-jha-supervisor">Clear</button>
+          <label class="btn btn-outline btn-sm" style="cursor:pointer;">📎 Attach file
+            <input type="file" id="sig-jha-supervisor-file" accept="image/*" hidden />
+          </label>
+        </div>
             </div>
           </div>
         </div>
@@ -1118,15 +1173,15 @@
           <label>Declaration (editable)</label>
           <textarea id="tech-declaration" rows="3">I confirm that the inspection and checks recorded in this checklist have been performed in accordance with FORECOURT WORKS LIMITED Standard Operating Procedures. Findings have been explained to the client representative in clear, non-technical language, including the current status of the equipment and any recommended remedial actions.</textarea>
         </div>
-        <div class="sig-pad-wrap"><canvas id="sig-tech"></canvas></div>
-        <div class="sig-actions">
-          <button type="button" class="btn btn-outline btn-sm" data-clear-sig="sig-tech">Clear Pad</button>
+        <div class="sig-unified" id="wrap-sig-tech">
+          <canvas id="sig-tech"></canvas>
+          <img id="sig-tech-file-preview" class="sig-file-overlay" alt="Signature" />
         </div>
-        <div class="sig-file-row">
-          <label class="btn btn-outline btn-sm" style="cursor:pointer;">📎 Attach Signature File
+        <div class="sig-actions-row">
+          <button type="button" class="btn btn-outline btn-sm" data-clear-sig="sig-tech">Clear</button>
+          <label class="btn btn-outline btn-sm" style="cursor:pointer;">📎 Attach file
             <input type="file" id="sig-tech-file" accept="image/*" hidden />
           </label>
-          <img id="sig-tech-file-preview" class="sig-preview" style="display:none;" alt="Tech signature file" />
         </div>
         <div class="sign-block">
           <div class="sign-left">
@@ -1158,15 +1213,15 @@
           <label>Position / Title</label>
           <input type="text" id="client-rep-title" class="auto-caps" />
         </div>
-        <div class="sig-pad-wrap"><canvas id="sig-client"></canvas></div>
-        <div class="sig-actions">
-          <button type="button" class="btn btn-outline btn-sm" data-clear-sig="sig-client">Clear Pad</button>
+        <div class="sig-unified" id="wrap-sig-client">
+          <canvas id="sig-client"></canvas>
+          <img id="sig-client-file-preview" class="sig-file-overlay" alt="Signature" />
         </div>
-        <div class="sig-file-row">
-          <label class="btn btn-outline btn-sm" style="cursor:pointer;">📎 Attach Signature File
+        <div class="sig-actions-row">
+          <button type="button" class="btn btn-outline btn-sm" data-clear-sig="sig-client">Clear</button>
+          <label class="btn btn-outline btn-sm" style="cursor:pointer;">📎 Attach file
             <input type="file" id="sig-client-file" accept="image/*" hidden />
           </label>
-          <img id="sig-client-file-preview" class="sig-preview" style="display:none;" alt="Client signature file" />
         </div>
         <div class="sign-block">
           <div class="sign-left">
