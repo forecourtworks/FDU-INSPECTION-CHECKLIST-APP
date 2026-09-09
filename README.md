@@ -6,7 +6,7 @@ A mobile-first, browser-based interactive checklist for petroleum pumping equipm
 
 **Contact:** Ramco Court, GT 3B, South C, Nairobi · Phone: +(254) 729-002-087 · Email: sales@forecourtworks.co.ke · www.forecourtworks.co.ke
 
-**Controlled document:** `insp/fd&pumps/Vol-001`  
+**Controlled document:** `INSP/FDU&Pumps/ControlledDoc/Vol-01`  
 **Inspection instance numbers:** e.g. `INSP/2026/001` (auto-filled, editable)
 
 This app complements the Technical Service Work Order. It records inspection observations, C/NC results, meter accuracy, and prioritised corrective actions. Troubleshooting and repair remain on the Work Order.
@@ -142,3 +142,13 @@ Technician and client (and JHA) signatures accept **either** pad drawing **or** 
 
 ### Meter / calibration entry
 Typing True Proven Volume updates results **in place** without rebuilding the whole form, so focus stays on the field and the page does not jump to the bottom.
+
+### PDF logo (mandatory)
+The FORECOURT-SWL mark is embedded in the app so Generate PDF always draws the logo on every page frame.
+
+### JHA layout
+Web: 5-column grid (Hazard Class | Possible Hazard | Control Measures | Compliance | Remarks), 7 prefilled editable rows.
+PDF: matching 5-column bordered table; sign-off below.
+
+### Rubber stamps
+White background. Attach image beside the stamp box; scale slider crops/fits into 58×22 mm. Stamps embed in PDF.

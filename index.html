@@ -82,6 +82,124 @@
     }
 
 
+
+    .jha-sheet {
+      border: 1px solid #0d478c;
+      border-radius: 8px;
+      overflow: hidden;
+      margin: 8px 0 16px;
+      background: #fff;
+    }
+    .jha-head-row, .jha-data-row {
+      display: grid;
+      grid-template-columns: 1.1fr 1.4fr 1.8fr 1.1fr 1.2fr;
+      gap: 0;
+      align-items: stretch;
+    }
+    .jha-head-row > div {
+      background: #0d478c;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.72rem;
+      padding: 8px 6px;
+      border-right: 1px solid rgba(255,255,255,0.25);
+    }
+    .jha-head-row > div:last-child { border-right: none; }
+    .jha-data-row {
+      border-top: 1px solid #c5d0dc;
+      background: #fff;
+    }
+    .jha-data-row > div {
+      padding: 6px;
+      border-right: 1px solid #e2e8f0;
+      min-height: 72px;
+    }
+    .jha-data-row > div:last-child { border-right: none; }
+    .jha-data-row textarea, .jha-data-row select, .jha-data-row input {
+      width: 100%;
+      height: 100%;
+      min-height: 64px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      padding: 4px 6px;
+      font-size: 0.75rem;
+      font-family: inherit;
+      resize: vertical;
+      box-sizing: border-box;
+      background: #fff;
+    }
+    .jha-data-row select.jha-status {
+      min-height: 40px;
+      height: auto;
+      font-weight: 600;
+    }
+    .jha-data-row select.jha-status.status-complied {
+      color: #1a7346; background: #ecfdf5; font-weight: 700;
+    }
+    .jha-data-row select.jha-status.status-not-complied {
+      color: #b91c1c; background: #fef2f2; font-weight: 700;
+    }
+    @media (max-width: 720px) {
+      .jha-head-row { display: none; }
+      .jha-data-row {
+        grid-template-columns: 1fr;
+        border-bottom: 2px solid #0d478c;
+        margin-bottom: 4px;
+      }
+      .jha-data-row > div { border-right: none; min-height: auto; }
+      .jha-data-row > div::before {
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #0d478c;
+        margin-bottom: 2px;
+      }
+      .jha-data-row .jh-c1::before { content: "Hazard Class"; }
+      .jha-data-row .jh-c2::before { content: "Possible Hazard"; }
+      .jha-data-row .jh-c3::before { content: "Control Measures"; }
+      .jha-data-row .jh-c4::before { content: "Compliance Status"; }
+      .jha-data-row .jh-c5::before { content: "Remarks"; }
+    }
+    .rubber-stamp {
+      width: 58mm;
+      height: 22mm;
+      border: 1.5px solid #666;
+      background: #ffffff !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+    }
+    .rubber-stamp span {
+      font-family: Arial, "Segoe UI", sans-serif;
+      font-weight: 700;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      color: rgba(0,0,0,0.12);
+      text-transform: uppercase;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .rubber-stamp img.stamp-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #fff;
+      z-index: 1;
+    }
+    .stamp-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 4px;
+      max-width: 58mm;
+    }
+    .stamp-actions input[type="range"] { width: 100%; }
     .jha-table-wrap { overflow-x: auto; margin: 8px 0 14px; }
     .jha-table {
       width: 100%;
@@ -167,7 +285,7 @@
       max-width: 220px;
       object-fit: contain;
       flex-shrink: 0;
-      background: transparent;
+      background: #000;
       border-radius: 4px;
       padding: 4px 8px;
     }
@@ -802,7 +920,7 @@
       <img src="forecourt-logo-banner.png" alt="FORECOURT-SWL" class="app-logo" width="220" height="38" />
     </div>
     <div class="wo-meta">
-      <span class="wo-badge" id="doc-number-display">Controlled Doc No: insp/fd&amp;pumps/Vol-001</span>
+      <span class="wo-badge" id="doc-number-display">Controlled Doc No: INSP/FDU&amp;Pumps/ControlledDoc/Vol-01</span>
       <span class="wo-badge" id="doc-status-display">DRAFT</span>
     </div>
     <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
@@ -1196,7 +1314,16 @@
               </div>
             </div>
           </div>
-          <div class="rubber-stamp" title="Rubber stamp area"><span>RUBBERSTAMP HERE</span></div>
+          <div class="rubber-stamp" id="stamp-tech-box" title="Rubber stamp area">
+            <span>RUBBERSTAMP HERE</span>
+            <img class="stamp-img" id="stamp-tech-img" alt="" style="display:none;" />
+          </div>
+          <div class="stamp-actions">
+            <label class="btn btn-outline btn-sm" style="cursor:pointer;">📎 Attach stamp
+              <input type="file" id="stamp-tech-file" accept="image/*" hidden />
+            </label>
+            <label style="font-size:0.7rem;">Crop/scale <input type="range" id="stamp-tech-scale" min="50" max="150" value="100" /></label>
+          </div>
         </div>
 
         <div class="client-sign-section">
@@ -1236,7 +1363,16 @@
               </div>
             </div>
           </div>
-          <div class="rubber-stamp" title="Rubber stamp area"><span>RUBBERSTAMP HERE</span></div>
+          <div class="rubber-stamp" id="stamp-client-box" title="Rubber stamp area">
+            <span>RUBBERSTAMP HERE</span>
+            <img class="stamp-img" id="stamp-client-img" alt="" style="display:none;" />
+          </div>
+          <div class="stamp-actions">
+            <label class="btn btn-outline btn-sm" style="cursor:pointer;">📎 Attach stamp
+              <input type="file" id="stamp-client-file" accept="image/*" hidden />
+            </label>
+            <label style="font-size:0.7rem;">Crop/scale <input type="range" id="stamp-client-scale" min="50" max="150" value="100" /></label>
+          </div>
         </div>
         </div>
         <button type="button" class="btn btn-primary btn-block" data-confirm="9" style="margin-top:14px;">Confirm Sign-Off &amp; Continue to Review</button>
