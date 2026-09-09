@@ -720,6 +720,27 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
 
+    /* Screen utility for printable tables */
+    .table-print {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    .table-print th,
+    .table-print td {
+      border: 1px solid #000;
+      padding: 8pt;
+      text-align: left;
+      vertical-align: top;
+    }
+    .table-print thead th {
+      background: #0d478c;
+      color: #fff;
+      font-weight: 700;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+
     /* ========== PRINT CSS BEST PRACTICES ========== */
     @page {
       margin: 20mm 20mm 20mm 20mm;
@@ -787,12 +808,15 @@
         page-break-after: avoid;
       }
 
+      /* Standard table print rules (repeat headers, avoid mid-table breaks) */
+      thead { display: table-header-group; }
+      tfoot { display: table-footer-group; }
       table {
         width: 100%;
         border-collapse: collapse;
         margin: 12pt 0;
-        break-inside: avoid;
         page-break-inside: avoid;
+        break-inside: avoid;
       }
       table, th, td {
         border: 1px solid #000;
@@ -802,16 +826,23 @@
         text-align: left;
       }
       thead {
-        display: table-header-group;
         background-color: #e0e0e0;
         font-weight: bold;
-      }
-      tfoot {
-        display: table-footer-group;
       }
       tbody tr {
         break-inside: avoid;
         page-break-inside: avoid;
+      }
+
+      .table-print {
+        border-collapse: collapse;
+        width: 100%;
+        page-break-inside: avoid;
+      }
+      .table-print th,
+      .table-print td {
+        border: 1px solid black;
+        padding: 8pt;
       }
 
       nav, .no-print, .hide-in-print,
