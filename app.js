@@ -2162,7 +2162,7 @@
     // Header badge - fixed controlled document number (no date)
     const numDisp = $('#doc-number-display');
     if (numDisp) {
-      numDisp.textContent = 'Controlled Doc No: INSP/FDU&Pumps/ControlledDoc/Vol-01';
+      numDisp.textContent = 'Controlled Doc No: insp/fdu&pumps/Vol-001';
     }
 
     initSelectors();
