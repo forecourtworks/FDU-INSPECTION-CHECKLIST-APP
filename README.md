@@ -152,3 +152,15 @@ PDF: matching 5-column bordered table; sign-off below.
 
 ### Rubber stamps
 White background. Attach image beside the stamp box; scale slider crops/fits into 58×22 mm. Stamps embed in PDF.
+
+
+## Cloud backup (GitHub via Cloudflare Worker)
+
+On **Generate Professional PDF**, **Share/Download PDF**, and **Save Draft Locally**:
+
+1. File is saved **locally first** (browser download) as `INSP. REPORT FOR {Unique Asset ID}.pdf` (or `.json` for drafts).
+2. A **background** upload runs to `https://inspection-backup-worker.forecourtmails1986.workers.dev/backup` (does not block the UI).
+3. Success toast: `Success - FSW received your file`
+4. Failure toast: `Failed - Auto resend Scheduled` — item is queued in `localStorage` and retried automatically.
+
+Original button behaviour (generate / share / local save) is preserved.

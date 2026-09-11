@@ -421,9 +421,9 @@
 
   // ── Embedded fonts: Roboto, Lato, Inter (Helvetica only as fallback) ──
   const FONT_FILES = {
-    Roboto: { normal: 'fonts/Roboto-Regular.ttf', bold: 'fonts/Roboto-Bold.ttf' },
-    Lato: { normal: 'fonts/Lato-Regular.ttf', bold: 'fonts/Lato-Bold.ttf' },
-    Inter: { normal: 'fonts/Inter-Regular.ttf', bold: 'fonts/Inter-Regular.ttf' }
+    Roboto: { normal: 'Roboto-Regular.ttf', bold: 'Roboto-Bold.ttf' },
+    Lato: { normal: 'Lato-Regular.ttf', bold: 'Lato-Bold.ttf' },
+    Inter: { normal: 'Roboto-Regular.ttf', bold: 'Roboto-Regular.ttf' }
   };
   let fontsReady = false;
   let activePdfFont = 'helvetica'; // fallback until embedded
@@ -1392,6 +1392,131 @@
     return empty.length > 0 && empty.length === sels.length; // all empty = incomplete if any checklist shown
   }
 
+
+  // ── Cloud backup (GitHub via Cloudflare Worker) ─────────────────────────
+  const BACKUP_URL = 'https://inspection-backup-worker.forecourtmails1986.workers.dev/backup';
+  const BACKUP_QUEUE_KEY = 'fsw_backup_retry_queue';
+
+  function buildReportFileName(ext) {
+    const assetId = (($('#lift-id') && $('#lift-id').value) || 'UNKNOWN').trim().replace(/[\\/:*?"<>|]/g, '-');
+    const e = (ext || 'pdf').replace(/^\./, '');
+    return 'INSP. REPORT FOR ' + assetId + '.' + e;
+  }
+
+  function downloadBlobLocally(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      try { URL.revokeObjectURL(url); } catch (_) {}
+      try { a.remove(); } catch (_) {}
+    }, 1500);
+  }
+
+  function readBackupQueue() {
+    try {
+      return JSON.parse(localStorage.getItem(BACKUP_QUEUE_KEY) || '[]');
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function writeBackupQueue(q) {
+    try {
+      localStorage.setItem(BACKUP_QUEUE_KEY, JSON.stringify(q.slice(-20)));
+    } catch (_) {}
+  }
+
+  function enqueueBackupRetry(item) {
+    const q = readBackupQueue().filter(x => x.fileName !== item.fileName);
+    q.push(item);
+    writeBackupQueue(q);
+  }
+
+  function removeBackupRetry(fileName) {
+    writeBackupQueue(readBackupQueue().filter(x => x.fileName !== fileName));
+  }
+
+  /** Background backup — does not block the UI. Local save must already have run. */
+  function backupToCloudInBackground(blob, fileName) {
+    const meta = {
+      fileName: fileName,
+      assetId: ($('#lift-id') && $('#lift-id').value) || '',
+      inspectionNo: ($('#doc-number') && $('#doc-number').value) || '',
+      client: ($('#client-name') && $('#client-name').value) || ''
+    };
+
+    // Store base64 in retry queue so we can resend later if offline
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      const payload = { ...meta, contentBase64: dataUrl, queuedAt: new Date().toISOString() };
+
+      fetch(BACKUP_URL, {
+        method: 'POST',
+        body: (() => {
+          const fd = new FormData();
+          fd.append('file', blob, fileName);
+          fd.append('fileName', fileName);
+          fd.append('assetId', meta.assetId);
+          fd.append('inspectionNo', meta.inspectionNo);
+          fd.append('client', meta.client);
+          return fd;
+        })()
+      })
+        .then(async (res) => {
+          let body = null;
+          try { body = await res.json(); } catch (_) {}
+          if (!res.ok || (body && body.ok === false)) {
+            throw new Error((body && body.error) || ('HTTP ' + res.status));
+          }
+          removeBackupRetry(fileName);
+          toast('Success - FSW received your file', 'success');
+        })
+        .catch((err) => {
+          console.warn('Backup failed, queued for resend', err);
+          enqueueBackupRetry(payload);
+          toast('Failed - Auto resend Scheduled', 'error');
+        });
+    };
+    reader.onerror = () => {
+      toast('Failed - Auto resend Scheduled', 'error');
+    };
+    reader.readAsDataURL(blob);
+  }
+
+  /** Retry queued backups in background (no UI block). */
+  function processBackupRetryQueue() {
+    const q = readBackupQueue();
+    if (!q.length) return;
+    q.forEach((item) => {
+      if (!item || !item.contentBase64 || !item.fileName) return;
+      fetch(BACKUP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: item.fileName,
+          contentBase64: item.contentBase64,
+          assetId: item.assetId || '',
+          inspectionNo: item.inspectionNo || '',
+          client: item.client || ''
+        })
+      })
+        .then(async (res) => {
+          let body = null;
+          try { body = await res.json(); } catch (_) {}
+          if (!res.ok || (body && body.ok === false)) throw new Error('retry failed');
+          removeBackupRetry(item.fileName);
+          toast('Success - FSW received your file', 'success');
+        })
+        .catch(() => { /* keep in queue */ });
+    });
+  }
+
   async function generatePDF() {
     const formatDateDDMonYYYY = window.formatDateDDMonYYYY || function (isoOrDate) {
       if (!isoOrDate) return '-';
@@ -2077,14 +2202,17 @@
         drawFooter(i, pageCount);
       }
 
-      const fileName = ($('#doc-number').value || 'Checklist') + '_' + ($('#client-name').value || 'Client').replace(/\s+/g, '_') + '.pdf';
+      const fileName = buildReportFileName('pdf');
       state.pdfBlob = doc.output('blob');
       state.pdfFileName = fileName;
-      doc.save(fileName);
+      // 1) Always save locally first (device download / browser temp)
+      downloadBlobLocally(state.pdfBlob, fileName);
       $('#btn-share').style.display = 'inline-flex';
       $('#pdf-status').textContent = 'PDF generated: ' + fileName;
       $('#doc-status-display').textContent = 'COMPLETED';
-      toast('PDF generated successfully', 'success');
+      toast('PDF saved on this device: ' + fileName, 'success');
+      // 2) Background cloud backup (does not block user)
+      backupToCloudInBackground(state.pdfBlob, fileName);
     } catch (err) {
       console.error(err);
       toast('PDF generation failed: ' + err.message, 'error');
@@ -2099,31 +2227,28 @@
       toast('Generate the PDF first', 'error');
       return;
     }
-    const file = new File([state.pdfBlob], state.pdfFileName, { type: 'application/pdf' });
+    const fileName = state.pdfFileName || buildReportFileName('pdf');
+    state.pdfFileName = fileName;
+    // Local save first
+    downloadBlobLocally(state.pdfBlob, fileName);
+    // Background backup
+    backupToCloudInBackground(state.pdfBlob, fileName);
+
+    const file = new File([state.pdfBlob], fileName, { type: 'application/pdf' });
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({
-          title: state.pdfFileName,
-          text: `Pump & Dispenser Inspection Checklist - ${$('#doc-number').value}`,
+          title: fileName,
+          text: 'Pump & Dispenser Inspection Checklist - ' + (($('#doc-number') && $('#doc-number').value) || ''),
           files: [file]
         });
       } catch (e) {
         if (e.name !== 'AbortError') {
-          const url = URL.createObjectURL(state.pdfBlob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = state.pdfFileName;
-          a.click();
-          toast('PDF downloaded. Attach it in WhatsApp, Email or any app.');
+          toast('PDF ready on this device: ' + fileName, 'success');
         }
       }
     } else {
-      const url = URL.createObjectURL(state.pdfBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = state.pdfFileName;
-      a.click();
-      toast('PDF downloaded. Attach it in WhatsApp, Email or any app.');
+      toast('PDF ready on this device: ' + fileName, 'success');
     }
   }
 
@@ -2132,18 +2257,17 @@
     $$('input, select, textarea').forEach(el => {
       if (el.id) data.fields[el.id] = el.type === 'checkbox' || el.type === 'radio' ? el.checked : el.value;
     });
-    // Also store result selects
     data.results = {};
     $$('.result-sel').forEach(sel => { data.results[sel.dataset.id] = sel.value; });
     data.remarks = {};
     $$('.remarks-input').forEach(inp => { data.remarks[inp.dataset.remarks] = inp.value; });
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = ($('#doc-number')?.value || 'Checklist') + '_draft.json';
-    a.click();
-    URL.revokeObjectURL(a.href);
-    toast('Draft downloaded to your device', 'success');
+    const fileName = buildReportFileName('json');
+    // 1) Local first
+    downloadBlobLocally(blob, fileName);
+    toast('Draft saved on this device: ' + fileName, 'success');
+    // 2) Background cloud backup
+    backupToCloudInBackground(blob, fileName);
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
@@ -2202,6 +2326,8 @@
       btn.addEventListener('click', () => clearSig(btn.dataset.clearSig));
     });
 
+    processBackupRetryQueue();
+    setInterval(processBackupRetryQueue, 120000);
     $('#btn-generate-pdf').addEventListener('click', generatePDF);
     $('#btn-share').addEventListener('click', sharePDF);
     $('#btn-save-draft').addEventListener('click', saveDraft);
