@@ -108,6 +108,81 @@
     { id: 'ph8', item: 'Bulk transfer pump performance', criteria: 'Flow and pressure meet duty requirements. No cavitation noise. Relief valve operates if fitted. Diaphragm pumps: air pressure correct, no fluid in air exhaust.' }
   ];
 
+
+  // ── STP-specific PM checklists (shown when equipment type = STP) ────────
+  const STP_STRUCTURAL = [
+    { id: 'stp-s1', item: 'Fuel leakage in STP sump & external pressure seals', criteria: 'No visible product leakage from integral check valve, line leak detector port, packer seals or any fittings. Sump free of standing fuel.' },
+    { id: 'stp-s2', item: 'Riser pipe seals & ends integrity', criteria: 'Both ends of riser form a tight seal preventing air and water ingress into the system. No evidence of seepage.' },
+    { id: 'stp-s3', item: 'Corrosion of packer manifold, riser, yoke, fasteners & fittings', criteria: 'O-ring sealing surfaces clean and non-corroded. Fasteners on pressure-containing parts free of severe corrosion. Severely corroded parts replaced.' },
+    { id: 'stp-s4', item: 'Electrical conduits, junction boxes & cable glands', criteria: 'Conduits and junction boxes intact, not broken or heavily corroded. Cable glands tight, correctly rated and not serving as sole earthing path.' },
+    { id: 'stp-s5', item: 'Siphon tubes, leak detection tubing & associated fittings', criteria: 'All tubing and fittings present, free of kinks, cracks, corrosion or damage. Connections tight and leak-free.' },
+    { id: 'stp-s6', item: 'Yoke (where fitted) – mechanical condition & isolation function', criteria: 'Yoke lifts freely to isolate motor power. Retaining screw tight; threads not stripped. Yoke seats correctly on return.' },
+    { id: 'stp-s7', item: 'General sump condition, accessibility & housekeeping', criteria: 'Sump lid secure, area clear of debris and excessive water, safe access for maintenance, no trip or slip hazards around STP.' }
+  ];
+
+  const STP_MECHANICAL = [
+    { id: 'stp-m1', item: 'Integral check valve – sealing integrity & fixing screws', criteria: 'Check valve holds system pressure after pump stop. Fixing screws tight. No external leakage past valve body or seals.' },
+    { id: 'stp-m2', item: 'Line leak detector valve / transducer (if fitted)', criteria: 'Component free of corrosion and mechanical damage. Mounting secure. No external leakage at ports or fittings.' },
+    { id: 'stp-m3', item: 'Packer manifold – O-ring sealing surfaces & pressure fasteners', criteria: 'Sealing surfaces clean, undamaged and free of corrosion. All pressure-retaining fasteners present, tight and in serviceable condition.' },
+    { id: 'stp-m4', item: 'Pump head / packer – visual mechanical condition', criteria: 'No cracks, excessive wear, missing components or signs of previous leakage. Protective coatings intact where applied.' },
+    { id: 'stp-m5', item: 'Riser pipe alignment, support & mechanical stress', criteria: 'Riser vertical and properly supported. No excessive bending stress transmitted to packer manifold or tank connection.' },
+    { id: 'stp-m6', item: 'Extractable UMP readiness (where applicable)', criteria: 'Extractable components free to lift. No seized threads or damaged lifting points. Safety lock-down devices functional.' },
+    { id: 'stp-m7', item: 'Running mechanical noise & vibration', criteria: 'No unusual mechanical noise or excessive vibration under shut-off or flowing conditions. Pump runs smoothly.' }
+  ];
+
+  const STP_ELECTRICAL = [
+    { id: 'stp-e1', item: 'Electrical supply cable & cable gland condition', criteria: 'Cable insulation intact, free of cuts, abrasions or product contamination. Gland tight, correctly rated and not corroded. Dedicated earth path verified.' },
+    { id: 'stp-e2', item: 'Supply voltage (outgoing side of contactor, pump running)', criteria: 'Voltage within +/-10 % of nameplate rating. Phase voltages balanced (3-ph). Measured at electrical panel – not at the STP.' },
+    { id: 'stp-e3', item: 'Motor running current at shut-off pressure', criteria: 'Current <= maximum amp value stated in OEM manual for the specific UMP. Current balanced across phases. No excessive inrush.' },
+    { id: 'stp-e4', item: 'Motor winding resistance (phase-to-phase)', criteria: 'Resistances within OEM tabulated values for the motor type (Franklin End View A or Faradyne End View B). Values consistent between phases.' },
+    { id: 'stp-e5', item: 'Motor winding isolation / insulation resistance to earth', criteria: 'Resistance to earth infinite (or meets OEM minimum). No phase-to-ground path. Earth conductors correctly terminated at earth bus in main panel.' },
+    { id: 'stp-e6', item: 'Contactor condition & operation', criteria: 'Contacts clean, free of severe pitting or arcing. No chatter on start/stop. Coil voltage correct. Contactor operates cleanly.' },
+    { id: 'stp-e7', item: 'Control circuit, run-signal integrity & isolation devices', criteria: 'Control voltage stable and correct. Yoke isolation (if fitted) functions. Local and remote isolation devices effective, labelled and tested.' }
+  ];
+
+  const STP_HYDRAULIC = [
+    { id: 'stp-h1', item: 'STP shut-off (no-flow) pressure', criteria: 'Pressure within the range specified in the applicable OEM manual (Table 6 of 577013-830 or Table 7 of 042-153) for the installed UMP model and current product level in tank.' },
+    { id: 'stp-h2', item: 'Flow rate at dispenser nozzle(s)', criteria: 'Flow rate meets site design / OEM expectation with clean filters. No significant restriction attributable to the STP or upstream piping.' },
+    { id: 'stp-h3', item: 'System pressure stability under continuous load', criteria: 'Pressure remains stable during continuous dispensing. No excessive drop or hunting indicating internal leakage or worn components.' },
+    { id: 'stp-h4', item: 'Check valve hold pressure / system integrity after stop', criteria: 'System holds pressure after pump stops. No rapid pressure decay indicating check-valve leakage or external product loss.' },
+    { id: 'stp-h5', item: 'Dispenser filter condition (impact on STP duty)', criteria: 'Filters clean or replaced as required. Differential pressure across filters within normal limits so STP is not forced against unnecessary restriction.' },
+    { id: 'stp-h6', item: 'Air / vapour elimination & delivery quality', criteria: 'No excessive air entrainment or vapour-locking symptoms. Product delivery smooth with no surging attributable to the STP.' },
+    { id: 'stp-h7', item: 'Overall hydraulic performance vs previous baseline', criteria: 'Current shut-off pressure and flow performance consistent with previously recorded values (or OEM data) for the same tank product level.' }
+  ];
+
+  function getPmChecklistSets() {
+    if (state.equipType === 'STP') {
+      return {
+        structural: STP_STRUCTURAL,
+        mechanical: STP_MECHANICAL,
+        electrical: STP_ELECTRICAL,
+        hydraulic: STP_HYDRAULIC,
+        titleS: 'A. Structural / Installation Integrity / General Outlook',
+        titleM: 'B. Mechanical Systems Health',
+        titleE: 'C. Electrical Systems Health',
+        titleH: 'D. Hydraulic Systems / Flow Performance Health',
+        pdfS: '5A. STRUCTURAL / INSTALLATION INTEGRITY / GENERAL OUTLOOK',
+        pdfM: '5B. MECHANICAL SYSTEMS HEALTH',
+        pdfE: '5C. ELECTRICAL SYSTEMS HEALTH',
+        pdfH: '5D. HYDRAULIC SYSTEMS / FLOW PERFORMANCE HEALTH'
+      };
+    }
+    return {
+      structural: PM_STRUCTURAL,
+      mechanical: PM_MECHANICAL,
+      electrical: PM_ELECTRICAL,
+      hydraulic: PM_HYDRAULIC,
+      titleS: 'A. Structural & Cabinet Integrity',
+      titleM: 'B. Mechanical System Health',
+      titleE: 'C. Electrical System Health',
+      titleH: 'D. Hydraulic / Flow Performance (excl. Meter Accuracy)',
+      pdfS: '5A. STRUCTURAL & CABINET INTEGRITY',
+      pdfM: '5B. MECHANICAL SYSTEM HEALTH',
+      pdfE: '5C. ELECTRICAL SYSTEM HEALTH',
+      pdfH: '5D. HYDRAULIC / FLOW PERFORMANCE'
+    };
+  }
+
   const REG_ITEMS = [
     { id: 'rg1', item: 'Weights & Measures Verification Certificate', criteria: 'Current certificate for the dispenser/meter. Validity period not expired. Issued by authorised verifier.' },
     { id: 'rg2', item: 'Metrology seals on adjustable parts', criteria: 'All seals protecting calibration/adjustment points present and intact. No evidence of tampering.' },
@@ -915,6 +990,8 @@
   function renderPM() {
     const cont = $('#pm-container');
     cont.innerHTML = '';
+    cont.dataset.equipType = state.equipType || '';
+    const sets = getPmChecklistSets();
     const wrap = document.createElement('div');
     wrap.innerHTML = `
       <div id="pm-struct"></div>
@@ -925,18 +1002,26 @@
       <div id="cal-inservice-container"></div>
     `;
     cont.appendChild(wrap);
-    renderCheckList('#pm-struct', PM_STRUCTURAL, 'A. Structural & Cabinet Integrity');
-    renderCheckList('#pm-mech', PM_MECHANICAL, 'B. Mechanical System Health');
-    renderCheckList('#pm-elec', PM_ELECTRICAL, 'C. Electrical System Health');
-    renderCheckList('#pm-hyd', PM_HYDRAULIC, 'D. Hydraulic / Flow Performance (excl. Meter Accuracy)');
-    // Dedicated Meter Accuracy modules with live calculation
-    renderCalSection('cal-new-container', 'new',
-      '1. METER ACCURACY - New & Never Used Before FDU  (Verification / Commissioning)', 'new');
-    renderCalSection('cal-inservice-container', 'inService',
-      '2. METER ACCURACY - In-Service FDU  (Routine Inspection)', 'inService');
+    renderCheckList('#pm-struct', sets.structural, sets.titleS);
+    renderCheckList('#pm-mech', sets.mechanical, sets.titleM);
+    renderCheckList('#pm-elec', sets.electrical, sets.titleE);
+    renderCheckList('#pm-hyd', sets.hydraulic, sets.titleH);
+    // Meter accuracy modules apply to FDU equipment; hide for pure STP inspections
+    if (state.equipType === 'STP') {
+      const note = document.createElement('div');
+      note.className = 'section-note';
+      note.style.marginTop = '12px';
+      note.textContent = 'Meter accuracy modules are not applicable to standalone SUBMERSIBLE TURBINE PUMP inspections. Record nozzle/meter checks under the related FDU inspection if required.';
+      wrap.appendChild(note);
+    } else {
+      renderCalSection('cal-new-container', 'new',
+        '1. METER ACCURACY - New & Never Used Before FDU  (Verification / Commissioning)', 'new');
+      renderCalSection('cal-inservice-container', 'inService',
+        '2. METER ACCURACY - In-Service FDU  (Routine Inspection)', 'inService');
+    }
   }
 
-  // ── Non-conformance auto-collect ───────────────────────────────────────
+
   function collectNCs() {
     const ncs = [];
     $$('.result-sel').forEach(sel => {
@@ -1054,7 +1139,10 @@
     }
     if (n === 2 && (!$('#preinstall-container') || !$('#preinstall-container').children.length)) renderCheckList('#preinstall-container', PREINSTALL_ITEMS);
     if (n === 3 && (!$('#install-container') || !$('#install-container').children.length)) renderCheckList('#install-container', INSTALL_ITEMS);
-    if (n === 4 && (!$('#pm-container') || !$('#pm-container').children.length)) renderPM();
+    if (n === 4) {
+      const pmc = $('#pm-container');
+      if (!pmc || !pmc.children.length || pmc.dataset.equipType !== (state.equipType || '')) renderPM();
+    }
     if (n === 5 && (!$('#reg-container') || !$('#reg-container').children.length)) renderReg();
     if (n === 6 && (!$('#training-topics') || !$('#training-topics').children.length)) renderTraining();
     if (n === 7) {
@@ -1947,10 +2035,11 @@
       if (state.serviceTypes.includes('1')) dumpTableSection('3. PRE-INSTALLATION SITE READINESS', PREINSTALL_ITEMS);
       if (state.serviceTypes.includes('2')) dumpTableSection('4. ASSET INSTALLATION CHECKLIST', INSTALL_ITEMS);
       if (state.serviceTypes.includes('3') || state.serviceTypes.includes('4')) {
-        dumpTableSection('5A. STRUCTURAL & CABINET INTEGRITY', PM_STRUCTURAL);
-        dumpTableSection('5B. MECHANICAL SYSTEM HEALTH', PM_MECHANICAL);
-        dumpTableSection('5C. ELECTRICAL SYSTEM HEALTH', PM_ELECTRICAL);
-        dumpTableSection('5D. HYDRAULIC / FLOW PERFORMANCE', PM_HYDRAULIC);
+        const pmSets = getPmChecklistSets();
+        dumpTableSection(pmSets.pdfS, pmSets.structural);
+        dumpTableSection(pmSets.pdfM, pmSets.mechanical);
+        dumpTableSection(pmSets.pdfE, pmSets.electrical);
+        dumpTableSection(pmSets.pdfH, pmSets.hydraulic);
 
         // ── Meter Accuracy PDF renderer (6-col table + analysis + repeatability) ──
         function dumpMeterAccuracy(stage, sectionTitle, legalNote) {

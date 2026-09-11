@@ -164,3 +164,8 @@ On **Generate Professional PDF**, **Share/Download PDF**, and **Save Draft Local
 4. Failure toast: `Failed - Auto resend Scheduled` — item is queued in `localStorage` and retried automatically.
 
 Original button behaviour (generate / share / local save) is preserved.
+
+
+## Equipment-specific PM checklists
+
+When **Equipment Type** is **SUBMERSIBLE TURBINE PUMP (STP)** (`STP`), the PM inspection sections use the STP structural, mechanical, electrical and hydraulic checklists. FDU types keep the standard dispenser/pump lists. Meter accuracy modules are hidden for standalone STP inspections.
